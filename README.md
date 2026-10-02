@@ -123,6 +123,32 @@ Close-ups with every shape outlined, the full gallery, caveats and how to reprod
 - Colours are averages, so a black-and-white animal comes out grey. Recolour in your vector editor.
 - Described shapes are only as good as SAM 3's masks, which are low-resolution and can be blobby at the edges.
 
+## Related work
+
+This is not a new idea. Turning Segment Anything masks into vector shapes is the SAMVG paper (2023), and others
+have built on it. Read from their READMEs and abstracts, **not run** by me except where noted:
+
+- **[KU-MIIL/semantic-svg-generation](https://github.com/KU-MIIL/semantic-svg-generation)** (paper:
+  [*Compositional SVG Generation via VLM-Driven Hierarchical Semantic Parsing*](https://arxiv.org/abs/2609.14657))
+  is the closest in spirit: a vision-language model (Gemini) names the parts, SAM 3 masks them, vtracer vectorises
+  each part and a painter's-algorithm compositor stacks the layers. It is a benchmark and pipeline for icons, emoji
+  and illustrations and needs a cloud model. tracesmart targets photos, runs locally, and you supply the names.
+- **SAMVG re-implementations** exist as small student repos (for example
+  [kevin20010808/MultimediaProcessingTermProject](https://github.com/kevin20010808/MultimediaProcessingTermProject)).
+  I did not find a packaged tool.
+- **[VTracer](https://github.com/visioncortex/vtracer)** is now at 1.0, with a desktop app and newer modes such as
+  seam-free cutout and watershed clustering. My comparison used the `vtracer` 0.6.15 Python package and did not
+  test those.
+- **Research methods** such as [AmodalSVG](https://arxiv.org/abs/2604.10940),
+  [*Controlling Your Image via Simplified Vector Graphics*](https://arxiv.org/abs/2602.14443),
+  [*Layered Image Vectorization via Semantic Simplification*](https://arxiv.org/abs/2406.05404), LIVE and
+  [SuperSVG](https://github.com/sjtuplayer/SuperSVG) (the only one I ran) are mostly GPU- or diffusion-heavy.
+- **Related tools**: [gimpsegany](https://github.com/Shriinivas/gimpsegany) puts SAM masks into GIMP as raster
+  layers, [lang-segment-anything](https://github.com/luca-medeiros/lang-segment-anything) gives text-prompted masks
+  without vectors, and Vector Magic, Vectorizer.ai and Illustrator's Image Trace are the commercial tracers.
+
+If you know of something closer, please open an issue.
+
 ## Built on SAMVG
 
 The method is a re-implementation of **[SAMVG](https://arxiv.org/abs/2311.05276)** (Haokun Zhu, Juang Ian Chong,

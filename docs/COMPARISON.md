@@ -85,7 +85,7 @@ region with every shape outlined:
 To get the shape count down, vtracer's detail knobs have to be turned until whole regions merge by colour alone,
 which is what the "tuned" column does: it keeps the speckle and loses the objects.
 
-Caveats: six photos, one run each; vtracer was tuned by a coarse search on path count only; SuperSVG ran on the
+Caveats: six photos, one run each; vtracer is the `vtracer` 0.6.15 Python package, not the 1.0 desktop app, whose newer modes (seam-free cutout, watershed clustering) were not tested; vtracer was tuned by a coarse search on path count only; SuperSVG ran on the
 CPU with patches ([`benchmarks/SUPERSVG.md`](../benchmarks/SUPERSVG.md)) and its path budget was set from tracesmart's
 count before gap-filling shapes were added, so tracesmart has up to a quarter more paths than SuperSVG on some photos.
 Reproduce with `benchmarks/compare.py`.
