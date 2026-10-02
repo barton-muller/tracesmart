@@ -1,7 +1,7 @@
 [project]
 name = "tracesmart"
 version = "0.1.0"
-description = "Image tracing that understands the picture: segment a photo with SAM 2.1 / SAM 3 and get one clean, flat-colour SVG path per object"
+description = "Image tracing that understands the picture: Segment Anything (SAM 2.1 / SAM 3) segmentation, one clean flat-colour SVG path per object"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

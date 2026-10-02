@@ -1,26 +1,51 @@
 # tracesmart
 
-**Image tracing that understands the picture: one clean SVG shape per object, not thousands of colour patches.**
+**Image tracing that understands the picture. It segments the photo with Meta's Segment Anything models (SAM 2.1,
+and SAM 3 for things you name) and writes one clean, flat-colour SVG shape per object, not thousands of colour
+patches.**
 
-Instead of tracing colours or edges, `tracesmart` first works out **what is in the
-picture** with Meta's Segment Anything models, then writes **one clean, flat-colour SVG path per object**: a red
-jumper is one shape, a window is one shape, a roof is one shape.
+## Goal
 
-It is aimed at turning photos into simplified, editable illustrations (Inkscape, Affinity, Illustrator): low
-detail, key features, and shapes you can recolour or redraw by hand.
+Most image-trace tools cluster pixels by colour or follow edges, and turn a photo into thousands of tiny colour
+patches. The result looks like the photo, but none of the shapes is a *thing*: a red jumper becomes dozens of
+fragments, so you cannot recolour it, move it or redraw it.
 
-- **Automatic mode**: SAM 2.1 finds the objects. A greedy "does this shape reduce the error?" filter keeps only
-  the ones that matter, and a second pass fills what is left.
-- **Described mode**: tell it what matters (`--care "window, red shutters, dog"`). SAM 3 finds every instance of
-  each phrase and those shapes are always kept, drawn on top, and **named after their phrase** in the SVG
-  (`window-12`, `red-shutters-3`), so you can select or delete all the windows at once.
-- **Sharp where it should be**: the tracer keeps real corners sharp (windows stay rectangular) and smooths only
-  where the outline actually curves.
-- **Runs locally**, including on the Apple GPU (MPS). No cloud service.
+tracesmart aims at the opposite: a **simplified, editable illustration** in which each recognisable thing (a
+jumper, a window, a roof, a person) is one shape. It is low on detail but keeps the key features, and the shapes are
+ready to recolour, rearrange or redraw in Inkscape, Affinity or Illustrator. It is not trying to reproduce the
+pixels. Every shape gets one flat colour on purpose, and you finish the colours in your vector editor.
 
-The method follows [SAMVG](https://arxiv.org/abs/2311.05276) (Zhu et al., ICASSP 2024), minus its
-differentiable-rendering optimisation step: colours are simply the mean of each shape's visible pixels.
-No SAMVG code has been released, so this is a re-implementation from the paper.
+No algorithm knows which details matter to *you*, so you can say so: `--care "window, red shutters, dog"` finds
+every instance of those, always keeps them, and names the shapes after what they are (`window-12`) so you can select
+them in one go. Whatever is still too fine for any segmenter (fur, foreground grass, faces), you trace by hand on
+top, in the same file.
+
+## How it segments, in brief
+
+1. **SAM 2.1** proposes objects across the image (a grid of point prompts, plus zoomed crops).
+2. A greedy filter keeps only the masks that earn their place: painted large to small in their mean colour, each
+   must measurably reduce the error against the photo.
+3. Big areas still badly covered are found and SAM 2.1 is prompted there, then filtered again.
+4. Optionally, **SAM 3** finds every instance of each phrase you give it; those shapes are always kept.
+5. Each mask becomes one path, with real corners kept sharp and curves smoothed.
+
+Details are under [How it works](#how-it-works).
+
+## Built on SAMVG
+
+The method is a re-implementation of **[SAMVG](https://arxiv.org/abs/2311.05276)** (Haokun Zhu, Juang Ian Chong,
+Teng Hu, Ran Yi, Yu-Kun Lai and Paul L. Rosin, *SAMVG: A Multi-stage Image Vectorization Model with the
+Segment-Anything Model*, ICASSP 2024). The core ideas come from that paper: using Segment Anything masks as the
+shapes of the vector image, **"filter by impact"** to decide which masks matter, and prompting the model again at
+badly covered regions. No SAMVG code has been released, so tracesmart is written from the paper, not from its
+code, and any shortcomings are ours.
+
+What differs from the paper:
+
+- SAM 2.1 instead of the original SAM, and no differentiable-rendering optimisation step: each shape is simply
+  filled with the mean colour of its visible pixels.
+- **Text descriptions with SAM 3** (`--care`), with shapes named after their phrase. This is not in SAMVG.
+- Corner-preserving tracing (windows stay rectangular), a fill for uncovered areas, and optional tone patches.
 
 ![The same photo traced by vtracer, SuperSVG and tracesmart](examples/hikers/methods.jpg)
 
@@ -227,7 +252,17 @@ uv run ruff check .
 - [SAM 2.1](https://github.com/facebookresearch/sam2) and [SAM 3](https://github.com/facebookresearch/sam3) by
   Meta, used through Hugging Face `transformers`. Their weights are under Meta's licences; check them before
   commercial use.
-- [SAMVG](https://arxiv.org/abs/2311.05276), the method this follows.
+- **[SAMVG](https://arxiv.org/abs/2311.05276)**, the method this is built on (see above). Please cite it if you use
+  this idea:
+
+  ```bibtex
+  @inproceedings{zhu2024samvg,
+    title     = {{SAMVG}: A Multi-stage Image Vectorization Model with the Segment-Anything Model},
+    author    = {Zhu, Haokun and Chong, Juang Ian and Hu, Teng and Yi, Ran and Lai, Yu-Kun and Rosin, Paul L.},
+    booktitle = {ICASSP 2024 - IEEE International Conference on Acoustics, Speech and Signal Processing},
+    year      = {2024}
+  }
+  ```
 - SVG-to-PNG rendering by [resvg](https://github.com/linebender/resvg).
 - Comparisons use [vtracer](https://github.com/visioncortex/vtracer) and [SuperSVG](https://github.com/sjtuplayer/SuperSVG).
 - Example photographs are from [Unsplash](https://unsplash.com); see [`examples/README.md`](examples/README.md) for credits.
