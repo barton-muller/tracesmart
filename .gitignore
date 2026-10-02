@@ -15,4 +15,4 @@ wheels/
 # Your own photos and everything generated from them stay local
 tests/images/
 outputs/
-segvec-out/
+tracesmart-out/

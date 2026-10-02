@@ -21,14 +21,14 @@
   "ssim": 0.379
  },
  {
-  "method": "segvec (automatic)",
+  "method": "tracesmart (automatic)",
   "paths": 70,
   "kb": 55,
   "psnr": 16.0,
   "ssim": 0.366
  },
  {
-  "method": "segvec (--care)",
+  "method": "tracesmart (--care)",
   "paths": 94,
   "kb": 64,
   "psnr": 16.6,

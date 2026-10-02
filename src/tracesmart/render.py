@@ -124,6 +124,6 @@ def build_index(folder: Path) -> int:
              ".zero{background:#4a2a2a;color:#e99}"
              ".l{color:#999;margin:2px 0 8px}a{color:#8cb4ff}")
     (folder / "index.html").write_text(
-        f"<!doctype html><meta charset=utf-8><title>segvec outputs</title><style>{style}</style>"
-        f"<h1>segvec outputs</h1>{''.join(cards)}")
+        f"<!doctype html><meta charset=utf-8><title>tracesmart outputs</title><style>{style}</style>"
+        f"<h1>tracesmart outputs</h1>{''.join(cards)}")
     return len(runs)

@@ -2,7 +2,7 @@
 
 [SuperSVG](https://github.com/sjtuplayer/SuperSVG) (CVPR 2024) is the learned, DiffVG-based method used as the
 "state of the art" reference in the comparison. It targets CUDA and Python 3.7, so it needs a few patches to run on
-a Mac. This is what worked here (Python 3.13, PyTorch 2.14, macOS arm64). Nothing in `segvec` depends on it.
+a Mac. This is what worked here (Python 3.13, PyTorch 2.14, macOS arm64). Nothing in `tracesmart` depends on it.
 
 ```bash
 mkdir vector-bench && cd vector-bench
@@ -35,7 +35,7 @@ mkdir weights && curl -L -o weights/dino_deitsmall16_pretrain.pth \
 The SuperSVG checkpoints (`coarse.pt`, `refine.pt`) download from Hugging Face on the first run.
 
 ```bash
-SUPERSVG_DIR=$PWD .venv/bin/python /path/to/segvec/benchmarks/run_supersvg.py photo.png 120 out.svg
+SUPERSVG_DIR=$PWD .venv/bin/python /path/to/tracesmart/benchmarks/run_supersvg.py photo.png 120 out.svg
 ```
 
 Notes:

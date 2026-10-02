@@ -1,6 +1,6 @@
 import numpy as np
 
-from segvec.render import uncovered_regions
+from tracesmart.render import uncovered_regions
 
 
 def test_uncovered_regions_are_found_and_small_ones_ignored():

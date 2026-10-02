@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 
-from segvec.render import render, shape_name
+from tracesmart.render import render, shape_name
 
 
 def test_shape_names():

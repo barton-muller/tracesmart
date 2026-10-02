@@ -1,6 +1,6 @@
 import numpy as np
 
-from segvec.trace import hex_colour, mask_path, smooth_mask
+from tracesmart.trace import hex_colour, mask_path, smooth_mask
 
 
 def disc(n=100, r=30):

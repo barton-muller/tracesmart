@@ -1,11 +1,11 @@
-"""Compare segvec with other vectorisers on the same photo.
+"""Compare tracesmart with other vectorisers on the same photo.
 
     uv run --group bench python benchmarks/compare.py NAME --care outputs/NAME/care [--auto outputs/NAME/auto] \
         [--extra "SVGTrace=path/to/result.svg" ...] [--out outputs/NAME/methods]
 
 Every method is rendered at the photo's resolution and scored against it, and a side-by-side sheet is written.
 vtracer (a conventional colour-clustering tracer) is run twice: with its defaults, and tuned so its path count is
-close to segvec's, which is the fairer comparison. ``--extra`` adds results from tools that cannot be run here
+close to tracesmart's, which is the fairer comparison. ``--extra`` adds results from tools that cannot be run here
 (online tracers, the methods in the papers); give a label and an SVG made from the same photo.
 
 Scores are against the *photo*, so a deliberately simplified illustration scores lower than a trace that copies
@@ -61,8 +61,8 @@ def tuned_vtracer(src: Path, dst: Path, target: int) -> tuple[int, dict]:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("name")
-    ap.add_argument("--care", type=Path, required=True, help="segvec run folder made with --care")
-    ap.add_argument("--auto", type=Path, help="segvec run folder made without --care")
+    ap.add_argument("--care", type=Path, required=True, help="tracesmart run folder made with --care")
+    ap.add_argument("--auto", type=Path, help="tracesmart run folder made without --care")
     ap.add_argument("--extra", action="append", default=[], metavar="LABEL=SVG")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args()
@@ -88,8 +88,8 @@ def main():
         label, _, p = label_svg.partition("=")
         methods.append((label, Path(p), "supplied"))
     if a.auto:
-        methods.append(("segvec (automatic)", a.auto / "vector.svg", "SAM 2.1 only"))
-    methods.append(("segvec (--care)", care_svg, "SAM 2.1 + SAM 3 phrases"))
+        methods.append(("tracesmart (automatic)", a.auto / "vector.svg", "SAM 2.1 only"))
+    methods.append(("tracesmart (--care)", care_svg, "SAM 2.1 + SAM 3 phrases"))
 
     panels, rows = [("photo", ref, "")], []
     for label, svg, _ in methods:

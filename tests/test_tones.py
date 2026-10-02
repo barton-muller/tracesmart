@@ -1,6 +1,6 @@
 import numpy as np
 
-from segvec.tones import split_tones
+from tracesmart.tones import split_tones
 
 
 def test_split_tones_separates_two_colours():

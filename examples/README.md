@@ -18,14 +18,14 @@ All six were run with `--grid 48 --impact 3e-5 --max-side 1280 --rounds 3 --care
 | File | What |
 |---|---|
 | `source.jpg` | The downscaled photo (1280 px on the long side) |
-| `vector.svg` | segvec with `--care`; described shapes are named after their phrase (`window-12`) |
-| `vector-auto.svg` | segvec, automatic only |
+| `vector.svg` | tracesmart with `--care`; described shapes are named after their phrase (`window-12`) |
+| `vector-auto.svg` | tracesmart, automatic only |
 | `supersvg.svg` | The SuperSVG (CVPR 2024) result with the same path budget |
 | `methods.jpg` | All panels in one row |
 | `compare.jpg` | source, segment map and vector |
-| `panels/` | Each panel on its own: `photo`, `vtracer-defaults`, `vtracer-matched`, `supersvg`, `segvec-automatic`, `segvec-care`, `segments` |
+| `panels/` | Each panel on its own: `photo`, `vtracer-defaults`, `vtracer-matched`, `supersvg`, `tracesmart-automatic`, `tracesmart-care`, `segments` |
 | `metrics.json` | Paths, file size, PSNR and SSIM per method |
-| `closeup.jpg` | (hikers, delft-street) the same region with every shape outlined, vtracer against segvec |
+| `closeup.jpg` | (hikers, delft-street) the same region with every shape outlined, vtracer against tracesmart |
 
 The vtracer SVGs are not included: the default one is about 15 to 20 MB per photo and the tuned one 1 to 2 MB.
 Regenerate them with `benchmarks/compare.py`.

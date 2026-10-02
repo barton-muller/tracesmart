@@ -1,6 +1,8 @@
-# segvec
+# tracesmart
 
-Content-aware image vectorising. Instead of tracing colours or edges, `segvec` first works out **what is in the
+**Image tracing that understands the picture: one clean SVG shape per object, not thousands of colour patches.**
+
+Instead of tracing colours or edges, `tracesmart` first works out **what is in the
 picture** with Meta's Segment Anything models, then writes **one clean, flat-colour SVG path per object**: a red
 jumper is one shape, a window is one shape, a roof is one shape.
 
@@ -20,18 +22,18 @@ The method follows [SAMVG](https://arxiv.org/abs/2311.05276) (Zhu et al., ICASSP
 differentiable-rendering optimisation step: colours are simply the mean of each shape's visible pixels.
 No SAMVG code has been released, so this is a re-implementation from the paper.
 
-![The same photo traced by vtracer, SuperSVG and segvec](examples/hikers/methods.jpg)
+![The same photo traced by vtracer, SuperSVG and tracesmart](examples/hikers/methods.jpg)
 
 *Left to right: the photo, vtracer (default), vtracer (tuned to about 110 paths), SuperSVG (CVPR 2024, about 110
-paths), segvec (automatic), segvec (`--care`). Photo by Dan Ordze on Unsplash.*
+paths), tracesmart (automatic), tracesmart (`--care`). Photo by Dan Ordze on Unsplash.*
 
 ## Install
 
 Requires Python 3.13 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/barton-muller/segvec
-cd segvec
+git clone https://github.com/barton-muller/tracesmart
+cd tracesmart
 uv sync
 ```
 
@@ -52,13 +54,13 @@ Automatic mode does not need SAM 3.
 
 ```bash
 # automatic
-uv run segvec trace photo.jpg -o out/
+uv run tracesmart trace photo.jpg -o out/
 
 # plus the things you care about
-uv run segvec trace photo.jpg -o out/ --care "person, face, hair, jumper, jeans, window, roof"
+uv run tracesmart trace photo.jpg -o out/ --care "person, face, hair, jumper, jeans, window, roof"
 ```
 
-`uv run segvec trace --help` lists every option. The ones you will touch most:
+`uv run tracesmart trace --help` lists every option. The ones you will touch most:
 
 | Option | Effect |
 |---|---|
@@ -89,7 +91,7 @@ Colours are intentionally plain averages; recolour in your vector editor.
 ### Re-render without a model
 
 ```bash
-uv run segvec rerender photo.jpg out/masks.npz --round-px 0
+uv run tracesmart rerender photo.jpg out/masks.npz --round-px 0
 ```
 
 ### See many runs at once
@@ -97,7 +99,7 @@ uv run segvec rerender photo.jpg out/masks.npz --round-px 0
 Lay runs out as `outputs/<image>/<variant>/` and build a page that shows them all:
 
 ```bash
-uv run segvec index --folder outputs
+uv run tracesmart index --folder outputs
 ```
 
 ## How it works
@@ -121,46 +123,46 @@ get better named.
 
 ### Hikers
 
-![Hikers: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/hikers/methods.jpg)
+![Hikers: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/hikers/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Unsplash. `--care`: person, hat, backpack, shorts, shirt, boot, hiking pole, tree, mountain, sky, gravel path. All panels, SVGs and metrics: [`examples/hikers/`](examples/hikers/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Unsplash. `--care`: person, hat, backpack, shorts, shirt, boot, hiking pole, tree, mountain, sky, gravel path. All panels, SVGs and metrics: [`examples/hikers/`](examples/hikers/).*
 
 ### Delft market street
 
-![Delft market street: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/delft-street/methods.jpg)
+![Delft market street: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/delft-street/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Folco Masi](https://unsplash.com/photos/yvByaC2YqPs) on Unsplash. `--care`: sky, cloud, house, gable, window, roof, door, person, bicycle, lamp, building. All panels, SVGs and metrics: [`examples/delft-street/`](examples/delft-street/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Folco Masi](https://unsplash.com/photos/yvByaC2YqPs) on Unsplash. `--care`: sky, cloud, house, gable, window, roof, door, person, bicycle, lamp, building. All panels, SVGs and metrics: [`examples/delft-street/`](examples/delft-street/).*
 
 ### Oostpoort gate, Delft
 
-![Oostpoort gate, Delft: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/oostpoort/methods.jpg)
+![Oostpoort gate, Delft: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/oostpoort/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Alex vd Slikke](https://unsplash.com/photos/GYIGt-MQwZ8) on Unsplash. `--care`: sky, tree, tower, spire, roof, window, chimney, brick wall, arch, bridge, water, road, fence, lamp. All panels, SVGs and metrics: [`examples/oostpoort/`](examples/oostpoort/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Alex vd Slikke](https://unsplash.com/photos/GYIGt-MQwZ8) on Unsplash. `--care`: sky, tree, tower, spire, roof, window, chimney, brick wall, arch, bridge, water, road, fence, lamp. All panels, SVGs and metrics: [`examples/oostpoort/`](examples/oostpoort/).*
 
 ### Mountain lake
 
-![Mountain lake: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/mountain-lake/methods.jpg)
+![Mountain lake: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/mountain-lake/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Kalen Emsley](https://unsplash.com/photos/mgJSkgIo_JI) on Unsplash. `--care`: mountain, snow, lake, forest, tree, rock, sky, cloud, person, backpack. All panels, SVGs and metrics: [`examples/mountain-lake/`](examples/mountain-lake/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Kalen Emsley](https://unsplash.com/photos/mgJSkgIo_JI) on Unsplash. `--care`: mountain, snow, lake, forest, tree, rock, sky, cloud, person, backpack. All panels, SVGs and metrics: [`examples/mountain-lake/`](examples/mountain-lake/).*
 
 ### Lone hiker
 
-![Lone hiker: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/lone-hiker/methods.jpg)
+![Lone hiker: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/lone-hiker/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Robert Bye](https://unsplash.com/photos/JvUVo08dndQ) on Unsplash. `--care`: person, backpack, shorts, sky, cloud, lake, forest, hill, rock, island, sea. All panels, SVGs and metrics: [`examples/lone-hiker/`](examples/lone-hiker/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Robert Bye](https://unsplash.com/photos/JvUVo08dndQ) on Unsplash. `--care`: person, backpack, shorts, sky, cloud, lake, forest, hill, rock, island, sea. All panels, SVGs and metrics: [`examples/lone-hiker/`](examples/lone-hiker/).*
 
 ### Canal and church tower
 
-![Canal and church tower: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`)](examples/canal/methods.jpg)
+![Canal and church tower: photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`)](examples/canal/methods.jpg)
 
-*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · segvec (automatic) · segvec (`--care`). Photo by [Casper van Battum](https://unsplash.com/photos/25i3kDguOAE) on Unsplash. `--care`: sky, tree, church tower, clock, building, car, bicycle, bridge, water, road. All panels, SVGs and metrics: [`examples/canal/`](examples/canal/).*
+*photo · vtracer (defaults) · vtracer (tuned to the same path count) · SuperSVG · tracesmart (automatic) · tracesmart (`--care`). Photo by [Casper van Battum](https://unsplash.com/photos/25i3kDguOAE) on Unsplash. `--care`: sky, tree, church tower, clock, building, car, bicycle, bridge, water, road. All panels, SVGs and metrics: [`examples/canal/`](examples/canal/).*
 
 ## How it compares
 
 The same six photos traced by [vtracer](https://github.com/visioncortex/vtracer) (a conventional colour-clustering
 tracer; colour-clustering tracing is the common approach in image-trace tools) and by
 [SuperSVG](https://github.com/sjtuplayer/SuperSVG) (CVPR 2024, a learned vectoriser). vtracer and SuperSVG were
-given a path budget close to segvec's; vtracer's defaults are shown too. Averages over the six photos
+given a path budget close to tracesmart's; vtracer's defaults are shown too. Averages over the six photos
 (per-photo numbers in [`benchmarks/RESULTS.md`](benchmarks/RESULTS.md)):
 
 | Method | Paths | File size | PSNR | SSIM |
@@ -168,19 +170,19 @@ given a path budget close to segvec's; vtracer's defaults are shown too. Average
 | vtracer, defaults | 14,074 | 15.4 MB | 22.8 | 0.76 |
 | vtracer, tuned to about 115 paths | 116 | 1.6 MB | 17.2 | 0.50 |
 | SuperSVG (CVPR 2024) | 115 | 63 KB | 18.8 | 0.43 |
-| segvec, automatic | 106 | 61 KB | 16.1 | 0.41 |
-| segvec, `--care` | 128 | 63 KB | 16.9 | 0.41 |
+| tracesmart, automatic | 106 | 61 KB | 16.1 | 0.41 |
+| tracesmart, `--care` | 128 | 63 KB | 16.9 | 0.41 |
 
 How to read this, honestly:
 
-- **By pixel scores segvec comes last** at a similar path count. PSNR and SSIM reward copying the photo;
-  segvec fills every shape with one flat colour and drops texture on purpose.
+- **By pixel scores tracesmart comes last** at a similar path count. PSNR and SSIM reward copying the photo;
+  tracesmart fills every shape with one flat colour and drops texture on purpose.
 - **vtracer's defaults are not a simplification**: about 14,000 paths and 15 MB per photo. Tuned down to about 115
-  paths it is speckled, and its files are about 25 times the size of segvec's at the same path count (each path
+  paths it is speckled, and its files are about 25 times the size of tracesmart's at the same path count (each path
   has many more nodes), which makes them harder to edit.
 - **SuperSVG** gives light files and a painterly look, but it blurs objects: the hikers and the buildings are not
   recognisable as separate things.
-- **What the scores miss** is whether a shape is an *object*. segvec's shapes are a hat, a backpack, a window,
+- **What the scores miss** is whether a shape is an *object*. tracesmart's shapes are a hat, a backpack, a window,
   and with `--care` they are named. That is the thing it is built for, and it is not measured by any score here;
   judge it from the images in [`examples/`](examples/).
 
@@ -192,16 +194,16 @@ close to a posterised copy of the photo (hence the high PSNR and SSIM), not a si
 patch is a fragment of something, not an object. Colour-clustering tracers in general behave this way. Here is the same
 region with every shape outlined:
 
-![Close-up of the hikers with every shape outlined: vtracer defaults against segvec](examples/hikers/closeup.jpg)
+![Close-up of the hikers with every shape outlined: vtracer defaults against tracesmart](examples/hikers/closeup.jpg)
 
-![Close-up of the houses with every shape outlined: vtracer defaults against segvec](examples/delft-street/closeup.jpg)
+![Close-up of the houses with every shape outlined: vtracer defaults against tracesmart](examples/delft-street/closeup.jpg)
 
 To get the shape count down, vtracer's detail knobs have to be turned until whole regions merge by colour alone,
 which is what the "tuned" column does: it keeps the speckle and loses the objects.
 
 Caveats: six photos, one run each; vtracer was tuned by a coarse search on path count only; SuperSVG ran on the
-CPU with patches ([`benchmarks/SUPERSVG.md`](benchmarks/SUPERSVG.md)) and its path budget was set from segvec's
-count before gap-filling shapes were added, so segvec has up to a quarter more paths than SuperSVG on some photos.
+CPU with patches ([`benchmarks/SUPERSVG.md`](benchmarks/SUPERSVG.md)) and its path budget was set from tracesmart's
+count before gap-filling shapes were added, so tracesmart has up to a quarter more paths than SuperSVG on some photos.
 Reproduce with `benchmarks/compare.py`.
 
 ## Limitations
@@ -230,4 +232,4 @@ uv run ruff check .
 - Comparisons use [vtracer](https://github.com/visioncortex/vtracer) and [SuperSVG](https://github.com/sjtuplayer/SuperSVG).
 - Example photographs are from [Unsplash](https://unsplash.com); see [`examples/README.md`](examples/README.md) for credits.
 
-segvec itself is MIT licensed (see `LICENSE`).
+tracesmart itself is MIT licensed (see `LICENSE`).

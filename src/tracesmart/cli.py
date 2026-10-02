@@ -1,9 +1,9 @@
-"""segvec command line.
+"""tracesmart command line.
 
-  segvec trace photo.jpg -o out/                                  # automatic: one SVG path per region
-  segvec trace photo.jpg -o out/ --care "window, red shutters"    # plus things you name (SAM 3)
-  segvec rerender photo.jpg out/masks.npz                         # redraw from saved masks, no model
-  segvec index --folder outputs                                   # one HTML page showing every run
+  tracesmart trace photo.jpg -o out/                                  # automatic: one SVG path per region
+  tracesmart trace photo.jpg -o out/ --care "window, red shutters"    # plus things you name (SAM 3)
+  tracesmart rerender photo.jpg out/masks.npz                         # redraw from saved masks, no model
+  tracesmart index --folder outputs                                   # one HTML page showing every run
 """
 import json
 from pathlib import Path
@@ -16,9 +16,9 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     rich_markup_mode=None,
-    help="Content-aware image vectorising: SAM 2.1 / SAM 3 segmentation to one flat-colour SVG path per object.",
-    epilog="Examples: segvec trace photo.jpg -o out/ | segvec trace photo.jpg --care 'window, roof' | "
-           "segvec rerender photo.jpg out/masks.npz",
+    help="Image tracing that understands the picture: SAM 2.1 / SAM 3 segmentation to one flat-colour SVG path per object.",
+    epilog="Examples: tracesmart trace photo.jpg -o out/ | tracesmart trace photo.jpg --care 'window, roof' | "
+           "tracesmart rerender photo.jpg out/masks.npz",
 )
 
 
@@ -33,7 +33,7 @@ def load_image(path: Path, max_side: int) -> Image.Image:
 @app.command()
 def trace(
     image: Path,
-    out: Path = typer.Option(Path("segvec-out"), "-o", "--out", help="output folder"),
+    out: Path = typer.Option(Path("tracesmart-out"), "-o", "--out", help="output folder"),
     care: str = typer.Option(
         None, "--care", "--text",
         help="things to describe, comma separated: 'window, red shutters, dog'. "

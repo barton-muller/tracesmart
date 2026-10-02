@@ -1,6 +1,6 @@
 import numpy as np
 
-from segvec.pipeline import Canvas, prompt_points, tidy
+from tracesmart.pipeline import Canvas, prompt_points, tidy
 
 
 def test_tidy_fills_holes_and_keeps_largest_piece():
