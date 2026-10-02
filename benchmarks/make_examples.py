@@ -30,7 +30,8 @@ out = Path("examples")
 for name in PHOTOS:
     d = out / name
     (d / "panels").mkdir(parents=True, exist_ok=True)
-    care, auto, meth = Path("outputs") / name / "care", Path("outputs") / name / "auto", Path("outputs") / name / "methods"
+    root = Path("outputs") / name
+    care, auto, meth = root / "care", root / "auto", root / "methods"
     jpg(care / "source.png", d / "source.jpg", q=88)
     shutil.copy(care / "vector.svg", d / "vector.svg")
     shutil.copy(auto / "vector.svg", d / "vector-auto.svg")

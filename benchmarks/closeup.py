@@ -21,7 +21,8 @@ def render_outlined(svg_path):
     png = resvg_py.svg_to_bytes(svg_string=svg, width=src.width * zoom, height=src.height * zoom)
     return Image.open(io.BytesIO(bytes(png))).convert("RGB")
 def crop(im, scale):
-    return im.crop(tuple(int(v * scale) for v in box)).resize((640, round(640 * (box[3] - box[1]) / (box[2] - box[0]))), Image.LANCZOS)
+    height = round(640 * (box[3] - box[1]) / (box[2] - box[0]))
+    return im.crop(tuple(int(v * scale) for v in box)).resize((640, height), Image.LANCZOS)
 panels = [("photo", crop(src, 1))]
 for label, svg in (("vtracer, defaults: every white line is a shape edge", root / "methods" / "vtracer_default.svg"),
                    ("tracesmart --care: every white line is a shape edge", root / "care" / "vector.svg")):
