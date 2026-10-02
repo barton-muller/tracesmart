@@ -94,6 +94,7 @@ def main():
     panels, rows = [("photo", ref, "")], []
     for label, svg, _ in methods:
         img = render(svg, size)
+        img.save(out / f"{re.sub(r'[^a-z0-9]+', '-', label.lower()).strip('-')}.png")  # each panel on its own
         psnr, ssim = score(ref, img)
         row = {"method": label, "paths": n_paths(svg), "kb": round(svg.stat().st_size / 1024),
                "psnr": round(psnr, 1), "ssim": round(ssim, 3)}

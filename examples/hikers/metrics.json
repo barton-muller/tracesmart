@@ -1,0 +1,37 @@
+[
+ {
+  "method": "vtracer (defaults)",
+  "paths": 17699,
+  "kb": 19404,
+  "psnr": 24.5,
+  "ssim": 0.781
+ },
+ {
+  "method": "vtracer (matched paths)",
+  "paths": 112,
+  "kb": 2097,
+  "psnr": 19.1,
+  "ssim": 0.492
+ },
+ {
+  "method": "SuperSVG (CVPR 2024)",
+  "paths": 113,
+  "kb": 62,
+  "psnr": 18.3,
+  "ssim": 0.377
+ },
+ {
+  "method": "segvec (automatic)",
+  "paths": 139,
+  "kb": 89,
+  "psnr": 15.5,
+  "ssim": 0.356
+ },
+ {
+  "method": "segvec (--care)",
+  "paths": 126,
+  "kb": 74,
+  "psnr": 15.5,
+  "ssim": 0.356
+ }
+]
