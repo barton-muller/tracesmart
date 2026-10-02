@@ -16,7 +16,7 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     rich_markup_mode=None,
-    help="Image tracing that understands the picture: SAM 2.1 / SAM 3 segmentation, one flat-colour SVG path per object.",
+    help="Image tracing that understands the picture: SAM 2.1 / SAM 3, one flat-colour SVG path per object.",
     epilog="Examples: tracesmart trace photo.jpg -o out/ | tracesmart trace photo.jpg --care 'window, roof' | "
            "tracesmart rerender photo.jpg out/masks.npz",
 )
