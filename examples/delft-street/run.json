@@ -1,0 +1,64 @@
+{
+ "care": [
+  {
+   "phrase": "sky",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "cloud",
+   "found": 17,
+   "kept": 16
+  },
+  {
+   "phrase": "house",
+   "found": 6,
+   "kept": 4
+  },
+  {
+   "phrase": "gable",
+   "found": 4,
+   "kept": 3
+  },
+  {
+   "phrase": "window",
+   "found": 56,
+   "kept": 56
+  },
+  {
+   "phrase": "roof",
+   "found": 8,
+   "kept": 7
+  },
+  {
+   "phrase": "door",
+   "found": 2,
+   "kept": 2
+  },
+  {
+   "phrase": "person",
+   "found": 20,
+   "kept": 20
+  },
+  {
+   "phrase": "bicycle",
+   "found": 4,
+   "kept": 4
+  },
+  {
+   "phrase": "lamp",
+   "found": 15,
+   "kept": 15
+  },
+  {
+   "phrase": "building",
+   "found": 8,
+   "kept": 4
+  }
+ ],
+ "grid": 48,
+ "impact": 3e-05,
+ "rounds": 3,
+ "care_threshold": 0.4,
+ "max_side": 1280
+}

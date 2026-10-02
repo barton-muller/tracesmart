@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -20,6 +21,16 @@ def shape_name(index: int, phrase: str | None) -> tuple[str, str]:
     return f"{slug}-{index}", f"{phrase} {index}"
 
 
+def uncovered_regions(masks: list[np.ndarray], min_px: int) -> list[np.ndarray]:
+    """Connected areas that no mask covers, big enough to matter. They become the bottom layer, so the
+    picture is never left showing a flat backdrop colour where, say, a gravel path should be."""
+    covered = np.zeros(masks[0].shape, bool)
+    for m in masks:
+        covered |= m
+    n, labels, stats, _ = cv2.connectedComponentsWithStats((~covered).astype(np.uint8), connectivity=8)
+    return [labels == i for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= min_px]
+
+
 def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None] | None = None,
            round_px: float | None = None, tol: float | None = None):
     """Stack ``masks`` (bottom first) into an SVG.
@@ -31,6 +42,8 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
     rgb = np.asarray(image.convert("RGB"))
     h, w = rgb.shape[:2]
     phrases = phrases or [None] * len(masks)
+    gaps = uncovered_regions(masks, max(20, int(0.0004 * h * w))) if masks else []
+    masks, phrases = gaps + list(masks), [None] * len(gaps) + list(phrases)  # uncovered areas sit at the bottom
     round_px = 0.0018 * max(h, w) if round_px is None else round_px
     tol = tol or max(1.0, 0.002 * max(h, w))
     if round_px > 0:

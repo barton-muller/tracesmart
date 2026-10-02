@@ -1,0 +1,79 @@
+{
+ "care": [
+  {
+   "phrase": "sky",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "tree",
+   "found": 7,
+   "kept": 7
+  },
+  {
+   "phrase": "tower",
+   "found": 2,
+   "kept": 2
+  },
+  {
+   "phrase": "spire",
+   "found": 3,
+   "kept": 1
+  },
+  {
+   "phrase": "roof",
+   "found": 5,
+   "kept": 4
+  },
+  {
+   "phrase": "window",
+   "found": 9,
+   "kept": 8
+  },
+  {
+   "phrase": "chimney",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "brick wall",
+   "found": 6,
+   "kept": 5
+  },
+  {
+   "phrase": "arch",
+   "found": 10,
+   "kept": 10
+  },
+  {
+   "phrase": "bridge",
+   "found": 0,
+   "kept": 0
+  },
+  {
+   "phrase": "water",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "road",
+   "found": 0,
+   "kept": 0
+  },
+  {
+   "phrase": "fence",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "lamp",
+   "found": 2,
+   "kept": 2
+  }
+ ],
+ "grid": 48,
+ "impact": 3e-05,
+ "rounds": 3,
+ "care_threshold": 0.4,
+ "max_side": 1280
+}

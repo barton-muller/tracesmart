@@ -1,0 +1,64 @@
+{
+ "care": [
+  {
+   "phrase": "person",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "backpack",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "shorts",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "sky",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "cloud",
+   "found": 20,
+   "kept": 20
+  },
+  {
+   "phrase": "lake",
+   "found": 3,
+   "kept": 1
+  },
+  {
+   "phrase": "forest",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "hill",
+   "found": 8,
+   "kept": 6
+  },
+  {
+   "phrase": "rock",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "island",
+   "found": 0,
+   "kept": 0
+  },
+  {
+   "phrase": "sea",
+   "found": 3,
+   "kept": 1
+  }
+ ],
+ "grid": 48,
+ "impact": 3e-05,
+ "rounds": 3,
+ "care_threshold": 0.4,
+ "max_side": 1280
+}

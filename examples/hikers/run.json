@@ -1,0 +1,64 @@
+{
+ "care": [
+  {
+   "phrase": "person",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "hat",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "backpack",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "shorts",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "shirt",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "boot",
+   "found": 6,
+   "kept": 6
+  },
+  {
+   "phrase": "hiking pole",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "tree",
+   "found": 15,
+   "kept": 15
+  },
+  {
+   "phrase": "mountain",
+   "found": 4,
+   "kept": 4
+  },
+  {
+   "phrase": "sky",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "gravel path",
+   "found": 1,
+   "kept": 1
+  }
+ ],
+ "grid": 48,
+ "impact": 3e-05,
+ "rounds": 3,
+ "care_threshold": 0.4,
+ "max_side": 1280
+}

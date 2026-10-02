@@ -1,0 +1,59 @@
+{
+ "care": [
+  {
+   "phrase": "sky",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "tree",
+   "found": 8,
+   "kept": 8
+  },
+  {
+   "phrase": "church tower",
+   "found": 1,
+   "kept": 0
+  },
+  {
+   "phrase": "clock",
+   "found": 1,
+   "kept": 1
+  },
+  {
+   "phrase": "building",
+   "found": 4,
+   "kept": 4
+  },
+  {
+   "phrase": "car",
+   "found": 22,
+   "kept": 21
+  },
+  {
+   "phrase": "bicycle",
+   "found": 8,
+   "kept": 8
+  },
+  {
+   "phrase": "bridge",
+   "found": 3,
+   "kept": 3
+  },
+  {
+   "phrase": "water",
+   "found": 2,
+   "kept": 2
+  },
+  {
+   "phrase": "road",
+   "found": 0,
+   "kept": 0
+  }
+ ],
+ "grid": 48,
+ "impact": 3e-05,
+ "rounds": 3,
+ "care_threshold": 0.4,
+ "max_side": 1280
+}
