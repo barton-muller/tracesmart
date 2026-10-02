@@ -22,16 +22,16 @@
  },
  {
   "method": "tracesmart (automatic)",
-  "paths": 155,
-  "kb": 71,
+  "paths": 157,
+  "kb": 73,
   "psnr": 15.3,
-  "ssim": 0.375
+  "ssim": 0.374
  },
  {
   "method": "tracesmart (--care)",
   "paths": 234,
-  "kb": 79,
+  "kb": 80,
   "psnr": 17.1,
-  "ssim": 0.383
+  "ssim": 0.38
  }
 ]

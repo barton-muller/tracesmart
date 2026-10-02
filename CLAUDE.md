@@ -48,6 +48,9 @@ uv run --group bench python benchmarks/compare.py --help            # vs vtracer
   `render.shape_name`. Anything that reorders or adds masks must keep `phrases` aligned.
 - Painter's order: masks are stacked bottom first; a shape's colour is the mean of its *visible* pixels. Areas no mask
   covers become extra bottom shapes at render time.
+- Neighbouring masks do not tile (SAM prompts differ, and smoothing shrinks masks), so `render.close_seams` grows each
+  shape by up to ~2 px (less for small shapes) to stop a darker shape below showing as a thin strip. `--seam-px 0`
+  turns it off. Do not remove it without another way of closing seams.
 - Tracing keeps corners where the outline turns more than 35 degrees (windows stay rectangular); do not replace it
   with plain Catmull-Rom smoothing.
 - Don't add features the README doesn't need. Failed experiments were removed on purpose (tiled colour regions,

@@ -54,8 +54,8 @@ given a path budget close to tracesmart's; vtracer's defaults are shown too. Ave
 | vtracer, defaults | 14,074 | 15.4 MB | 22.8 | 0.76 |
 | vtracer, tuned to about 115 paths | 116 | 1.6 MB | 17.2 | 0.50 |
 | SuperSVG (CVPR 2024) | 115 | 63 KB | 18.8 | 0.43 |
-| tracesmart, automatic | 106 | 61 KB | 16.1 | 0.41 |
-| tracesmart, `--care` | 128 | 63 KB | 16.9 | 0.41 |
+| tracesmart, automatic | 107 | 62 KB | 16.2 | 0.41 |
+| tracesmart, `--care` | 128 | 64 KB | 17.0 | 0.41 |
 
 How to read this, honestly:
 

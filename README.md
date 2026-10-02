@@ -6,8 +6,8 @@ patches.**
 
 ![Hikers: the photo, what tracesmart found, and the result](examples/hikers/compare.jpg)
 
-*Left: the photo. Middle: what it found, every shape in its own colour. Right: the result, 126 flat-colour shapes in
-a 74 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Unsplash.*
+*Left: the photo. Middle: what it found, every shape in its own colour. Right: the result, 127 flat-colour shapes in
+a 75 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Unsplash.*
 
 ## Why use it
 
@@ -103,8 +103,8 @@ Averages over the six photos:
 | vtracer, defaults | 14,074 | 15.4 MB | 22.8 | 0.76 |
 | vtracer, tuned to about 115 paths | 116 | 1.6 MB | 17.2 | 0.50 |
 | SuperSVG (CVPR 2024) | 115 | 63 KB | 18.8 | 0.43 |
-| tracesmart, automatic | 106 | 61 KB | 16.1 | 0.41 |
-| tracesmart, `--care` | 128 | 63 KB | 16.9 | 0.41 |
+| tracesmart, automatic | 107 | 62 KB | 16.2 | 0.41 |
+| tracesmart, `--care` | 128 | 64 KB | 17.0 | 0.41 |
 
 - **By pixel scores tracesmart comes last** at a similar path count. PSNR and SSIM reward copying the photo;
   tracesmart flattens every shape to one colour on purpose.

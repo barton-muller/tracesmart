@@ -31,8 +31,26 @@ def uncovered_regions(masks: list[np.ndarray], min_px: int) -> list[np.ndarray]:
     return [labels == i for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= min_px]
 
 
+def close_seams(masks: list[np.ndarray], max_px: float) -> list[np.ndarray]:
+    """Grow every shape a little so neighbours overlap instead of leaving a thin sliver of the layer below.
+
+    Masks from different SAM prompts do not tile perfectly, and smoothing shrinks each one a bit more, so two
+    neighbours (sky and mountain) can end up 1 to 3 px apart with a darker shape showing through. A neighbour that
+    is painted later covers the sliver. Big shapes grow by up to ``max_px``; small ones barely at all, so a window
+    keeps its size.
+    """
+    out = []
+    for m in masks:
+        r = int(round(min(max_px, 0.04 * np.sqrt(m.sum()))))
+        if r >= 1:
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+            m = cv2.dilate(m.astype(np.uint8), kernel).astype(bool)
+        out.append(m)
+    return out
+
+
 def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None] | None = None,
-           round_px: float | None = None, tol: float | None = None):
+           round_px: float | None = None, tol: float | None = None, seam_px: float | None = None):
     """Stack ``masks`` (bottom first) into an SVG.
 
     Returns ``(svg, preview image, segment-map svg)``. Each shape is filled with the mean colour of its
@@ -48,6 +66,9 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
     tol = tol or max(1.0, 0.002 * max(h, w))
     if round_px > 0:
         masks = [smooth_mask(m, min(round_px, 0.05 * np.sqrt(m.sum()))) if m.sum() > 100 else m for m in masks]
+    seam_px = 0.0016 * max(h, w) if seam_px is None else seam_px
+    if seam_px > 0:
+        masks = close_seams(masks, seam_px)
 
     above = np.zeros((h, w), bool)  # visible part of a shape = itself minus everything painted after it
     colours = [None] * len(masks)
@@ -79,11 +100,11 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
 
 
 def write_outputs(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None], out: Path,
-                  round_px: float | None = None, zoom: float = 3.0) -> None:
+                  round_px: float | None = None, zoom: float = 3.0, seam_px: float | None = None) -> None:
     """Write the SVG, a hi-res PNG, the segment map (SVG + PNG) and a source | segments | vector comparison."""
     import resvg_py
 
-    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px)
+    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px, seam_px=seam_px)
     (out / "vector.svg").write_text(svg)
     (out / "segments.svg").write_text(seg_svg)
     preview.save(out / "preview.png")

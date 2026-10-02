@@ -23,15 +23,15 @@
  {
   "method": "tracesmart (automatic)",
   "paths": 122,
-  "kb": 56,
-  "psnr": 15.4,
-  "ssim": 0.365
+  "kb": 58,
+  "psnr": 15.6,
+  "ssim": 0.369
  },
  {
   "method": "tracesmart (--care)",
   "paths": 126,
   "kb": 56,
-  "psnr": 15.6,
-  "ssim": 0.363
+  "psnr": 15.8,
+  "ssim": 0.368
  }
 ]

@@ -25,13 +25,13 @@
   "paths": 139,
   "kb": 89,
   "psnr": 15.5,
-  "ssim": 0.356
+  "ssim": 0.359
  },
  {
   "method": "tracesmart (--care)",
-  "paths": 126,
-  "kb": 74,
-  "psnr": 15.5,
-  "ssim": 0.356
+  "paths": 127,
+  "kb": 75,
+  "psnr": 15.6,
+  "ssim": 0.358
  }
 ]
