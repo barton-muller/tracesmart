@@ -20,6 +20,28 @@ uv run tracesmart trace photo.jpg -o out/ --care "person, face, hair, jumper, je
 | `--round-px 0` | Mask smoothing before tracing; 0 gives the crispest shapes |
 | `--tone-rms 45` | Split shapes with strong internal colour contrast into tone patches |
 
+## Faces
+
+SAM cannot resolve an eye a few pixels wide, so facial detail is a **second stage** that runs on a finished trace
+and draws the parts from where they are. It finds each face with RetinaFace, crops and upscales it, and reads it with
+a face-parsing SegFormer (hair, neck, skin, glasses) and `face-alignment` (68 landmarks: eyes, brows, mouth).
+
+```bash
+uv sync --extra faces      # once: installs face-alignment (it downloads its weights on first use)
+uv run tracesmart trace photo.jpg -o out/ --max-side 1280
+uv run --extra faces tracesmart faces photo.jpg out/masks.npz --max-side 1280      # writes out/faces/
+```
+
+`--style cartoon` (default) draws each eye as a dot (an arc if it is closed), the mouth as a line or a dark open
+shape (plus a teeth strip on big faces), brows as strokes, and no nose. `--style detailed` draws eye whites, irises,
+pupils, lids, lips and teeth. Detail falls with face size: under 40 px only hair, skin and brows, under 80 px also
+eyes and mouth, above that teeth too. Glasses are drawn when the parser finds them (filled lenses for sunglasses,
+rings otherwise). Colours are the photo's, nudged towards what a part must look like (`render.PRIOR_COLOURS`).
+
+The shapes are named after their part (`eye-81`, `hair-60`) and are ordinary described shapes, so `--layers` treats
+them like `--care` shapes. Earlier face shapes are replaced, so the stage can be rerun. It works best on frontal
+faces; a face whose landmarks fall off the skin (turned head) gets only hair, neck and skin.
+
 ## What you get
 
 Everything lands in the output folder:

@@ -112,6 +112,40 @@ def rerender(
 
 
 @app.command()
+def faces(
+    image: Path,
+    masks: Path = typer.Argument(..., help="masks.npz from an earlier `trace` run"),
+    out: Path = typer.Option(None, "-o", "--out", help="output folder (default: a `faces` folder next to masks.npz)"),
+    max_side: int = typer.Option(1024, help="use the same value as the original run"),
+    style: str = typer.Option("cartoon", help="cartoon (eyes are dots, mouth a line or open shape) or detailed "
+                                              "(eye whites, irises, lips, teeth)"),
+    layers: str = typer.Option("none", help="as for `trace`: none, objects, levels or depth"),
+    group: str = typer.Option("person", help="with --layers objects: phrases whose shapes become groups"),
+    zoom: float = 3.0,
+):
+    """Second stage: add facial detail (eyes, brows, lips, teeth, glasses, hair, skin) to a finished trace.
+
+    Needs the optional extra: uv sync --extra faces. Earlier face shapes in MASKS are replaced, so it can be rerun.
+    """
+    from . import backends
+    from .faces import add_details
+    from .render import write_outputs
+
+    data = np.load(masks)
+    out = out or masks.parent / "faces"
+    out.mkdir(parents=True, exist_ok=True)
+    img = load_image(image, max_side)
+    phrases = [p or None for p in data["phrases"].tolist()] if "phrases" in data else [None] * len(data["masks"])
+    items, counts = add_details(list(zip(data["masks"], phrases, strict=True)), img, backends.best_device(),
+                                style, log=typer.echo)
+    new_masks, new_phrases = [m for m, _ in items], [p for _, p in items]
+    np.savez_compressed(out / "masks.npz", masks=np.stack(new_masks), phrases=np.array([p or "" for p in new_phrases]))
+    img.save(out / "source.png")
+    write_outputs(img, new_masks, new_phrases, out, None, zoom, None, layers, group, True)
+    typer.echo(f"{len(new_masks)} shapes ({sum(counts.values())} face parts) -> {out}/vector.svg")
+
+
+@app.command()
 def index(folder: Path = typer.Option(Path("outputs"), help="folder of runs laid out as <image>/<variant>/")):
     """Write FOLDER/index.html: every run's source | segments | vector, with its care words."""
     from .render import build_index

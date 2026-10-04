@@ -22,6 +22,33 @@ def shape_name(index: int, phrase: str | None) -> tuple[str, str]:
     return f"{slug}-{index}", f"{phrase} {index}"
 
 
+PRIOR_COLOURS = {  # described face parts: (colour the part must look like, how far to pull the sampled mean towards it)
+    "teeth": ((240, 236, 228), 0.55),
+    "eye white": ((236, 232, 226), 0.5),
+    "iris": ((40, 28, 20), 0.3),
+    "pupil": ((10, 8, 8), 0.75),
+    "eyelid": ((25, 18, 16), 0.6),
+    "eyebrow": ((30, 22, 18), 0.25),
+    "mouth": ((120, 30, 35), 0.7),
+    "mouth line": ((60, 25, 25), 0.6),
+    "eye": ((15, 12, 12), 0.85),
+}
+
+
+def shape_colour(phrase: str | None, pixels: np.ndarray) -> np.ndarray:
+    """A shape's fill from its visible ``pixels`` (N x 3): their mean, nudged towards the known colour of a face part
+    (teeth are white, pupils dark) so a flat mean over a few mixed pixels does not turn them grey. Clear glasses
+    take the colour of the pixels furthest from the usual colour inside the shape, which is the frame."""
+    mean = pixels.mean(0)
+    if phrase == "glasses" and len(pixels) >= 20:
+        far = np.linalg.norm(pixels - np.median(pixels, 0), axis=1)
+        return pixels[far >= np.quantile(far, 0.65)].mean(0)
+    if phrase in PRIOR_COLOURS:
+        target, k = PRIOR_COLOURS[phrase]
+        return (1 - k) * mean + k * np.asarray(target, float)
+    return mean
+
+
 def uncovered_regions(masks: list[np.ndarray], min_px: int) -> list[np.ndarray]:
     """Connected areas that no mask covers, big enough to matter. They become the bottom layer, so the
     picture is never left showing a flat backdrop colour where, say, a gravel path should be."""
@@ -133,7 +160,7 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
     colours = [None] * len(masks)
     for i in range(len(masks) - 1, -1, -1):
         visible = masks[i] & ~above
-        colours[i] = rgb[visible if visible.sum() >= 5 else masks[i]].mean(0)
+        colours[i] = shape_colour(phrases[i], rgb[visible if visible.sum() >= 5 else masks[i]])
         above |= masks[i]
     backdrop = rgb.reshape(-1, 3).mean(0)
     preview = np.zeros_like(rgb)

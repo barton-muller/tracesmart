@@ -27,6 +27,32 @@ For anyone (human or agent) picking this project up. Written 2026-10-04. Agent-o
 5. Optional: DiffVG refinement of shapes and colours (SAMVG stage 3), PyPI release (the name `tracesmart` was free
    on 2026-10-02).
 
+## Faces (`tracesmart faces`, `src/tracesmart/faces.py`)
+
+Added 2026-10-04, uncommitted at the time of writing. A second stage over a finished `masks.npz`; optional extra
+`faces` (`face-alignment`). Usage is in `docs/USAGE.md`.
+
+- Pipeline: RetinaFace boxes (via face-alignment; SAM 3 "face" gave a spurious tiny box, BlazeFace missed faces) ->
+  crop with margin -> SegFormer face parsing (hair, neck, skin, glasses) and FAN landmarks (eyes, brows, mouth).
+  Hair/neck/skin are inserted by area like `--care` shapes (skin above its hair); parts go on top of everything.
+- Drawn from landmarks, not traced: eye dot at the darkest spot of the eye (arc if closed), mouth line or dark open
+  shape, teeth = pale unsaturated pixels of the open mouth, brows = darkest half of the dropped landmark band
+  (`BROW_DROP`: FAN traces the brow's top edge), glasses = parsed region (sunglasses) or a ring per eye from the
+  parsed region's extent. `render.PRIOR_COLOURS` nudges a part's sampled mean towards its known colour (teeth white,
+  pupils dark), keyed on the phrase, so `rerender` keeps it.
+- Detail tiers by face size (`SMALL_FACE`, `FULL_FACE`); no nose shape, ever (the user's call). A face whose landmarks
+  do not fall on the parsed skin (turned head) gets only hair, neck and skin.
+- Tried and failed: face parsing alone (eyes are specks); plain-mean colours over landmark outlines (eyes and brows
+  came out skin-coloured); MediaPipe Face Landmarker (478 points, but the Python 3.13 macOS wheel aborts with "Service
+  is unavailable" in its Metal helper, in the sandbox and in the user's terminal; `mediapipe-silicon` is 0.9.3 for
+  older Pythons with `protobuf<4`, not tried).
+- Ideas: Sapiens2 segmentation (`facebook/sapiens2-seg-0.8b`, 29 classes including teeth, lips, tongue, eyeglasses,
+  loads in transformers; multi-GB, custom licence) would replace the colour heuristics for teeth and glasses.
+- Test photos: family photo (60 px faces), and two Unsplash group photos in `tests/images/joel.jpg`, `tim.jpg`
+  (gitignored; credits: Joel Muniz, Tim Mossholder).
+- `uv sync --extra faces` also installs `opencv-python` and `opencv-contrib-python` next to the project's
+  `opencv-python-headless`. They share the `cv2` module and work, but it is untidy; worth pinning.
+
 ## Environment map
 
 | What | Where |
