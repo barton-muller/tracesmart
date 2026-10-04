@@ -40,8 +40,10 @@ pupils, lids, lips and teeth. Detail falls with face size: under 40 px only hair
 eyes and mouth, and from 60 px the parse gives teeth too. Glasses are drawn when the parser finds them (filled lenses for sunglasses,
 rings otherwise). Colours are the photo's, nudged towards what a part must look like (`render.PRIOR_COLOURS`).
 
-The shapes are named after their part (`eye-81`, `hair-60`) and are ordinary described shapes, so `--layers` treats
-them like `--care` shapes. Earlier face shapes are replaced, so the stage can be rerun. It works best on frontal
+The shapes are named `face-<part>-<n>` (`face-eye-81`, `face-hair-60`) and are ordinary described shapes, so `--layers`
+treats them like `--care` shapes. Earlier face shapes are replaced, so the stage can be rerun, and your own `--care`
+shapes are never touched: face parts go on top of them, and a `hair`, `neck` or `face` shape you described is used
+instead of the parsed one. It works best on frontal
 faces; a face whose landmarks fall off the skin (turned head) gets only hair, neck and skin.
 
 ## What you get

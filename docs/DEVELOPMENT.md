@@ -46,10 +46,19 @@ Added 2026-10-04, uncommitted at the time of writing. A second stage over a fini
   phrase, so `rerender` keeps it. Hair uses the darkest 70% of its pixels: the parse covers the gaps between curls and
   the plain mean turned curly hair grey. Shapes cannot have holes (`trace.mask_path` is outer contour only), which is
   why glasses rings failed.
+- Names and care words: every shape this stage adds has the phrase prefix `face ` (`PREFIX`), so a rerun replaces its own
+  shapes and never a `--care` shape (an earlier version matched part names and would have deleted a care `hair`).
+  `given_by_care` skips the stage's own hair, neck or skin when a care shape of the same word already covers 60% of it.
+- Crowds: a face crop contains its neighbours, and the largest parsed region of a part can belong to one of them
+  (two eyes from different faces gave giant eye dots). Parse-derived parts are restricted to the face's own box
+  (`within`), dot size is capped by face size, and glasses must span half the face (`GLASSES_SPAN`).
 - Placement: a face's hair, neck and skin are inserted just above the last larger shape that covers a quarter of
   them (`insert_pos`; the shape list is not sorted by area, and first-smaller-shape put a girl's skin under her own
-  body shape). The trace's own shapes that are the same thing (IoU above 0.5, or inside and not tiny, `same_thing`)
+  body shape). The trace's own shapes that are the same thing (IoU above 0.5, or at least 70% inside the new one, `same_thing`)
   are dropped, otherwise they peek out as grey slivers.
+- The models read crops from the original photo (`faces.grab`, `--from-original`, default): on the stairs photo this gave
+  eyes behind clear glasses, thinner brows and no wrongly placed mouth on a turned head, against reading the 1280 px
+  trace image. Tier thresholds are in trace pixels. Shapes are always drawn at trace size.
 - Detail tiers by face size (`SMALL_FACE`, `FULL_FACE`); no nose shape, ever (the user's call). A face whose landmarks
   do not fall on the parsed skin (turned head) gets only hair, neck and skin.
 - Tried and failed: face parsing alone (eyes are specks); plain-mean colours over landmark outlines (eyes and brows
@@ -61,7 +70,8 @@ Added 2026-10-04, uncommitted at the time of writing. A second stage over a fini
   faces but cut hair and neck at the crop edge, which showed as flat edges. So features come from a tight crop, hair and
   neck also from a wider crop (`WIDE`), and hair near the face from a whole-image pass (`parse_full`). Remaining
   limit: hair that every pass labels as clothing (long hair over a shoulder) still ends flat. Growing the hair mask
-  along same-coloured trace shapes was considered and not built: it fixes single cases, not the method.
+  along same-coloured trace shapes was built and removed: on the stairs photo, the case it targeted, the flat edge was
+  identical with and without it, so it added a colour threshold for no visible gain.
 - Sapiens2 segmentation (1B, tried by the user online) was not better on faces: dropped.
 - Speed (Apple GPU for the parser, CPU for FAN, 5 faces, 853x1280 and 1280x853 photos): faces stage about 8 s warm and
   16 s cold, about 1.5 s per face; parse crops 2.5 s (10 passes), whole-image hair parse 0.9 s, landmarks 0.6 s,

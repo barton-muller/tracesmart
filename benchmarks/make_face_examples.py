@@ -4,11 +4,14 @@
 
 Expects, for each example name below, outputs/<name>/ from `tracesmart trace` (the plain trace) and its children
 `faces/` and `faces-detailed/` from `tracesmart faces ... --style cartoon|detailed`, all run with --max-side 1280.
+Optionally outputs/<name>-care/ made the same way with --care words: it becomes row 2 of overview.jpg. The original
+photos are read from tests/images/original/<name>.jpg (gitignored), so the models see full resolution.
 Writes downscaled JPEG panels, the SVGs, the per-face step strips, the detector overlay and the crop-versus-whole-image
 parse comparison.
 """
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import cv2
@@ -16,7 +19,10 @@ import numpy as np
 import torch
 from PIL import Image
 
-from tracesmart import backends, faces
+sys.path.insert(0, str(Path(__file__).parent))
+from face_figures import overview  # noqa: E402
+
+from tracesmart import backends, faces  # noqa: E402
 
 EXAMPLES = {  # example folder -> (outputs/ name, title, photographer, Unsplash photo id)
     "lake-friends": ("tim", "Five friends by the lake", "Tim Mossholder", "hOF1bWoet_Q"),
@@ -131,6 +137,10 @@ def main() -> None:
             row.paste(im, (i * (image.width + 20), 0))
         jpg(row, out / "compare.jpg", 2400)
         n = step_figures(image, root, out, device)
+        care = Path("outputs") / f"{name}-care"
+        original = Path("tests/images/original") / f"{name}.jpg"
+        jpg(overview(root, care if care.exists() else None, original if original.exists() else None, device),
+            out / "overview.jpg", 3000)
         meta = json.loads((root / "run.json").read_text()) if (root / "run.json").exists() else {}
         (out / "run.json").write_text(json.dumps({
             "title": title, "photographer": who, "unsplash": photo_id, "faces": n,

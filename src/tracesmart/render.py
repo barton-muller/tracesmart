@@ -40,6 +40,8 @@ def shape_colour(phrase: str | None, pixels: np.ndarray) -> np.ndarray:
     (teeth are white, pupils dark) so a flat mean over a few mixed pixels does not turn them grey. Clear glasses
     take the colour of the pixels furthest from the usual colour inside the shape, which is the frame."""
     mean = pixels.mean(0)
+    if phrase and phrase.startswith("face "):  # a part drawn by the faces stage: "face teeth", "face eye", ...
+        phrase = phrase[5:]
     if phrase == "glasses" and len(pixels) >= 20:
         far = np.linalg.norm(pixels - np.median(pixels, 0), axis=1)
         return pixels[far >= np.quantile(far, 0.65)].mean(0)

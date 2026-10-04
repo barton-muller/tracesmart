@@ -117,6 +117,8 @@ def faces(
     masks: Path = typer.Argument(..., help="masks.npz from an earlier `trace` run"),
     out: Path = typer.Option(None, "-o", "--out", help="output folder (default: a `faces` folder next to masks.npz)"),
     max_side: int = typer.Option(1024, help="use the same value as the original run"),
+    from_original: bool = typer.Option(True, help="face models read the original photo, not the downscaled trace image "
+                                                  "(sharper on small faces; shapes keep the trace size)"),
     style: str = typer.Option("cartoon", help="cartoon (eyes are dots, mouth a line or open shape) or detailed "
                                               "(eye whites, irises, lips, teeth)"),
     layers: str = typer.Option("none", help="as for `trace`: none, objects, levels or depth"),
@@ -135,9 +137,12 @@ def faces(
     out = out or masks.parent / "faces"
     out.mkdir(parents=True, exist_ok=True)
     img = load_image(image, max_side)
+    source = Image.open(image).convert("RGB") if from_original else None
+    if source is not None and source.width <= img.width:
+        source = None  # nothing sharper to read
     phrases = [p or None for p in data["phrases"].tolist()] if "phrases" in data else [None] * len(data["masks"])
     items, counts = add_details(list(zip(data["masks"], phrases, strict=True)), img, backends.best_device(),
-                                style, log=typer.echo)
+                                style, log=typer.echo, source=source)
     new_masks, new_phrases = [m for m, _ in items], [p for _, p in items]
     np.savez_compressed(out / "masks.npz", masks=np.stack(new_masks), phrases=np.array([p or "" for p in new_phrases]))
     img.save(out / "source.png")

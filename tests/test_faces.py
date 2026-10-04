@@ -68,3 +68,50 @@ def test_squinting_eyes_count_as_closed_in_both_styles():
     assert not faces.eye_closed(open_eye) and faces.eye_closed(shut)
     arc, phrase = faces.eye_arc(shut, 40.0, (12, 20))
     assert phrase == "eye" and arc.sum() >= 18
+
+
+def test_grab_reads_the_same_region_from_a_sharper_original():
+    from PIL import Image
+
+    small = Image.new("RGB", (100, 100))
+    big = Image.new("RGB", (400, 400))
+    big.paste((255, 0, 0), (80, 120, 160, 200))  # the red block that is (20, 30)-(40, 50) at trace size
+    crop = faces.grab(small, big, (20, 30, 40, 50))
+    assert crop.size == (80, 80) and crop.getpixel((40, 40)) == (255, 0, 0)
+    assert faces.grab(small, None, (20, 30, 40, 50)).size == (20, 20)
+
+
+def test_within_keeps_only_the_faces_own_box():
+    m = faces.within((60, 100), (20, 10, 60, 40), 5)  # grown to x 15..65, y 5..45
+    assert m.sum() == 50 * 40
+    assert m[25, 40] and m[5, 15] and m[44, 64]
+    assert not m[4, 40] and not m[25, 65] and not m[25, 14]
+
+
+def test_care_hair_is_respected_and_not_confused_with_face_parts():
+    hair = np.zeros((20, 40), bool)
+    hair[:, 5:25] = True
+    new = np.zeros_like(hair)
+    new[:, 6:26] = True
+    elsewhere = np.zeros_like(hair)
+    elsewhere[:, 30:40] = True
+    assert faces.given_by_care([(hair, "hair")], new, "hair")
+    assert faces.given_by_care([(hair, "face")], new, "skin")  # a --care "face" shape counts as the skin
+    assert not faces.given_by_care([(hair, "hair")], elsewhere, "hair")
+    assert not faces.given_by_care([(hair, None)], new, "hair")  # an unnamed trace shape is not a care shape
+    assert not faces.given_by_care([(hair, "face hair")], new, "hair")  # nor is one this stage drew
+
+
+def test_landmarks_on_glasses_are_trusted():
+    pts = np.zeros((68, 2))
+    pts[36:42] = [[20, 40]] * 6   # left eye
+    pts[42:48] = [[60, 40]] * 6   # right eye
+    pts[48:68] = [[40, 80]] * 20  # mouth
+    pts[30] = [40, 60]            # nose tip, midway between the eyes
+    box = (10, 20, 70, 100)
+    skin = np.zeros((120, 100), bool)
+    skin[55:100, 25:55] = True          # nose and mouth are on skin ...
+    glasses = np.zeros_like(skin)
+    glasses[35:45, 15:65] = True        # ... the eyes are behind glasses
+    assert not faces.trust_landmarks(pts, skin, box)
+    assert faces.trust_landmarks(pts, skin | glasses, box)

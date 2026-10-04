@@ -22,10 +22,11 @@ from .pipeline import tidy
 PARSER = "jonathandinu/face-parsing"
 SKIN = ("skin", "nose", "l_brow", "r_brow", "l_eye", "r_eye", "mouth", "u_lip", "l_lip", "l_ear", "r_ear")
 NECK = ("neck", "neck_l")
+PREFIX = "face "  # phrase prefix of every shape this stage adds, so it never touches or duplicates --care shapes
+CARE_SAME = {"hair": ("hair",), "neck": ("neck",), "skin": ("skin", "face")}  # care words that already give the region
 PHRASES = ("hair", "neck", "skin", "lips", "mouth", "mouth line", "teeth", "eye", "eye white", "iris", "pupil",
            "eyelid", "eyebrow", "glasses", "sunglasses")
 MARGIN = 0.95  # crop half-size as a fraction of the face box's longer side: room for hair
-HAIR_COLOUR_GAP = 28  # Lab distance within which a neighbouring trace shape counts as more of the same hair
 WIDE = 2.2  # the wide crop for hair and neck is this many times larger, so long hair is not cut off
 SIDE = 512  # crop size fed to both models
 MIN_FACE = 24  # px: smaller detections are ignored
@@ -33,6 +34,7 @@ SMALL_FACE = 40  # px: from here a face also gets lips and an eye line
 SEG_FACE = 60  # px: from here the parse gives brows, the open mouth with teeth, and eye dots if landmarks fail
 FULL_FACE = 80  # px: from here the detailed style draws eye whites, irises and pupils
 # (hair, skin and neck at any size; never a nose)
+GLASSES_SPAN = 0.5  # glasses must be at least this wide as a share of the face: a small blob is not a pair
 EYE_CLOSED = 0.2  # eye height as a share of its width below which it counts as closed (laughing, squinting)
 MIN_EYE_SPACING = 0.3  # eye distance as a share of the face box width: less means a profile or bad landmarks
 MAX_NOSE_OFFSET = 0.45  # nose tip sideways from the mid-eye point, in eye spacings
@@ -113,6 +115,38 @@ def teeth_mask(inner: np.ndarray, rgb: np.ndarray) -> np.ndarray:
     val = hsv[..., 2]
     ok = inner & (val >= 0.7 * np.quantile(val[inner], 0.95)) & (hsv[..., 1] < 0.45 * 255)
     return cv2.morphologyEx(ok.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8)).astype(bool)
+
+
+def find_landmarks(crop: Image.Image, box, origin: tuple[int, int], s: int) -> np.ndarray | None:
+    """FAN's 68 landmarks for the face in ``box``, in image coordinates, from the square ``crop`` (half-size ``s``,
+    top-left corner ``origin``) or None."""
+    ox, oy = origin
+    x0, y0, x1, y1 = (int(v) for v in box[:4])
+    found = fan().get_landmarks_from_image(np.asarray(crop.resize((SIDE, SIDE), Image.LANCZOS)),
+                                           detected_faces=[[(v - o) * SIDE / (2 * s) for v, o in
+                                                            ((x0, ox), (y0, oy), (x1, ox), (y1, oy))]])
+    return found[0] * (2 * s) / SIDE + [ox, oy] if found else None
+
+
+def trust_landmarks(pts: np.ndarray, skin: np.ndarray, box) -> bool:
+    """Landmarks are only believed if most key points land on parsed skin, the eyes are a sensible distance apart and
+    the nose sits between them: a turned or occluded face gives garbage."""
+    h, w = skin.shape
+    x0, x1 = int(box[0]), int(box[2])
+    key = [pts[36:42].mean(0), pts[42:48].mean(0), pts[48:68].mean(0), pts[30]]
+    on_skin = sum(bool(skin[min(max(int(y), 0), h - 1), min(max(int(x), 0), w - 1)]) for x, y in key)
+    spacing = np.linalg.norm(pts[36:42].mean(0) - pts[42:48].mean(0))
+    centred = abs(pts[30][0] - (pts[36:42].mean(0)[0] + pts[42:48].mean(0)[0]) / 2) <= MAX_NOSE_OFFSET * spacing
+    return bool(on_skin >= 3 and spacing >= MIN_EYE_SPACING * (x1 - x0) and centred)
+
+
+def within(shape: tuple[int, int], box, pad: int) -> np.ndarray:
+    """A mask of ``box`` (x0, y0, x1, y1) grown by ``pad``: parse results outside it belong to a neighbouring face."""
+    h, w = shape
+    x0, y0, x1, y1 = (int(v) for v in box[:4])
+    inside = np.zeros(shape, bool)
+    inside[max(0, y0 - pad):max(0, y1 + pad), max(0, x0 - pad):max(0, x1 + pad)] = True
+    return inside
 
 
 def eye_closed(eye: np.ndarray) -> bool:
@@ -212,10 +246,21 @@ def glasses_parts(image_rgb: np.ndarray, region: np.ndarray) -> list[tuple[np.nd
     return [(solid, "sunglasses" if grey[region].mean() < SUNGLASSES else "glasses")]
 
 
-def parse_region(image: Image.Image, cx: int, cy: int, s: int, device: str) -> tuple[np.ndarray, dict[int, str]]:
+def grab(image: Image.Image, source: Image.Image | None, box: tuple[int, int, int, int]) -> Image.Image:
+    """The crop ``box`` (in ``image`` coordinates) taken from ``source``, the original photo, when there is one: the
+    models then see real detail instead of the downscaled trace image, and everything is still drawn at trace size."""
+    src = source or image
+    k = src.width / image.width
+    return src.crop(tuple(round(v * k) for v in box))
+
+
+def parse_region(image: Image.Image, cx: int, cy: int, s: int, device: str,
+                 source: Image.Image | None = None) -> tuple[np.ndarray, dict[int, str]]:
     """Face-parsing labels for the square crop of half-size ``s`` round (cx, cy), pasted into a full-size map."""
     w, h = image.size
-    labels, names = parse_labels(image.crop((cx - s, cy - s, cx + s, cy + s)), device)
+    labels, names = parse_labels(grab(image, source, (cx - s, cy - s, cx + s, cy + s)), device)
+    if labels.shape != (2 * s, 2 * s):  # parsed from the original: bring the labels back to trace size
+        labels = cv2.resize(labels.astype(np.uint8), (2 * s, 2 * s), interpolation=cv2.INTER_NEAREST)
     full = np.zeros((h, w), labels.dtype)
     fx0, fy0, fx1, fy1 = max(cx - s, 0), max(cy - s, 0), min(cx + s, w), min(cy + s, h)
     full[fy0:fy1, fx0:fx1] = labels[fy0 - (cy - s):fy1 - (cy - s), fx0 - (cx - s):fx1 - (cx - s)]
@@ -237,7 +282,7 @@ def parse_full(image: Image.Image, device: str) -> np.ndarray:
 
 
 def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", min_px: int = 4,
-                full_hair: np.ndarray | None = None) -> list[tuple[np.ndarray, str]]:
+                full_hair: np.ndarray | None = None, source: Image.Image | None = None) -> list[tuple[np.ndarray, str]]:
     """Detail shapes for one face (``box`` x0, y0, x1, y1), bottom first, as full-image ``(mask, phrase)`` pairs.
 
     ``cartoon``: eyes are dots, the mouth a line or a dark open shape, brows strokes. ``detailed``: eye whites,
@@ -252,9 +297,10 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
     s = max(int(max(x1 - x0, y1 - y0) * MARGIN), 8)
     cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
     ox, oy = cx - s, cy - s
-    crop = image.crop((ox, oy, cx + s, cy + s))
-    near, names = parse_region(image, cx, cy, s, device)  # tight crop: the face features
-    wide, _ = parse_region(image, cx, cy, round(s * WIDE), device)  # wide crop: hair and neck are not cut at the edge
+    crop = grab(image, source, (ox, oy, cx + s, cy + s))
+    near, names = parse_region(image, cx, cy, s, device, source)  # tight crop: the face features
+    # wide crop: hair and neck are not cut at the edge
+    wide, _ = parse_region(image, cx, cy, round(s * WIDE), device, source)
 
     def ids(*group: str) -> list[int]:
         return [i for i, n in names.items() if n in group]
@@ -262,8 +308,10 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
     def parsed(*group: str) -> np.ndarray:
         return np.isin(near, ids(*group))
 
+    mine = within((h, w), box, round(0.1 * size))  # a crop holds neighbouring faces: parts must be on this one
+
     def seg(*group: str, px: int = 3) -> np.ndarray | None:
-        return tidy(parsed(*group), px)
+        return tidy(parsed(*group) & mine, px)
 
     def whole(*group: str) -> np.ndarray:
         """The parsed region from the tight crop plus whatever of it the wide crop shows beyond the crop edge."""
@@ -285,23 +333,15 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
         if m is not None:
             out.append((m, phrase))
 
-    glasses = parsed("eye_g")
-    has_glasses = glasses.sum() > 0.01 * face_area
+    glasses = parsed("eye_g") & mine
+    gx = np.nonzero(glasses.any(0))[0]
+    has_glasses = glasses.sum() > 0.01 * face_area and len(gx) and np.ptp(gx) + 1 >= GLASSES_SPAN * (x1 - x0)
     sun = has_glasses and grey[glasses].mean() < SUNGLASSES
     parts = glasses_parts(rgb, glasses) if has_glasses else []  # from the parse alone; eyes and brows go over it
 
     # landmarks: only trusted if they sit on the face (a turned or occluded face gives garbage)
-    found = fan().get_landmarks_from_image(np.asarray(crop.resize((SIDE, SIDE), Image.LANCZOS)),
-                                           detected_faces=[[(v - o) * SIDE / (2 * s) for v, o in
-                                                            ((x0, ox), (y0, oy), (x1, ox), (y1, oy))]])
-    pts = found[0] * (2 * s) / SIDE + [ox, oy] if found else None  # crop -> image coordinates
-    ok = False
-    if pts is not None:
-        key = [pts[36:42].mean(0), pts[42:48].mean(0), pts[48:68].mean(0), pts[30]]
-        on_skin = sum(bool(skin[min(max(int(y), 0), h - 1), min(max(int(x), 0), w - 1)]) for x, y in key)
-        spacing = np.linalg.norm(pts[36:42].mean(0) - pts[42:48].mean(0))
-        centred = abs(pts[30][0] - (pts[36:42].mean(0)[0] + pts[42:48].mean(0)[0]) / 2) <= MAX_NOSE_OFFSET * spacing
-        ok = on_skin >= 3 and spacing >= MIN_EYE_SPACING * (x1 - x0) and centred
+    pts = find_landmarks(crop, box, (ox, oy), s)
+    ok = pts is not None and trust_landmarks(pts, skin | glasses, box)  # eyes behind glasses are still on the face
     big = size >= FULL_FACE
     parse_ok = size >= SEG_FACE
     shape = (h, w)
@@ -346,7 +386,7 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
         seg_eyes = [seg(n) for n in ("l_eye", "r_eye")] if parse_ok else []
         centres = [np.array(np.nonzero(e)[::-1]).mean(1) for e in seg_eyes if e is not None]
         if ok:
-            gap = np.linalg.norm(pts[36:42].mean(0) - pts[42:48].mean(0))
+            gap = min(np.linalg.norm(pts[36:42].mean(0) - pts[42:48].mean(0)), 0.67 * size)
             for eye in (pts[36:42], pts[42:48]):
                 width = np.linalg.norm(eye[3] - eye[0])
                 near = [c for c in centres if np.linalg.norm(c - eye.mean(0)) < 0.6 * width]
@@ -361,9 +401,10 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
                     parts += eye_parts(rgb, grey, eye, eye[:4], gap)
                 else:
                     parts.append((fill(shape, eye[:4], max(1, round(0.14 * width))), "eyelid"))
-        elif len(centres) == 2:  # landmarks rejected: dots at the parsed eyes
+        elif len(centres) == 2:  # landmarks rejected: dots at the parsed eyes, if they look like one pair
             gap = np.linalg.norm(centres[0] - centres[1])
-            parts += [(disc(shape, c, max(1.2, 0.09 * gap)), "eye") for c in centres]
+            if 0.15 * size <= gap <= 0.8 * size:
+                parts += [(disc(shape, c, max(1.2, 0.09 * min(gap, 0.67 * size))), "eye") for c in centres]
 
     # tidy fills holes: fine for solid parts, and glasses are stacked shapes without holes
     tidied = [(m if p in ("glasses", "sunglasses") and m.sum() >= min_px else tidy(m, min_px), p)
@@ -390,36 +431,23 @@ def insert_pos(items: list[tuple[np.ndarray, str | None]], m: np.ndarray) -> int
     return last + 1
 
 
-def grow_hair(hair: np.ndarray, items: list[tuple[np.ndarray, str | None]], rgb: np.ndarray,
-              avoid: np.ndarray) -> np.ndarray:
-    """Extend a parsed hair mask along the trace's own shapes that touch it and have the same colour. Hair that runs
-    past what the parser labels (long hair over a shoulder, read as clothing) then ends where the picture does,
-    not at a crop edge. Shapes that overlap ``avoid`` (the face and neck) are never taken."""
-    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
-    lum = lab[..., 0][hair]
-    colour = lab[hair][lum <= np.quantile(lum, 0.7)].mean(0)
-    grown = hair.copy()
-    limit = 0.8 * hair.sum()
-    for _ in range(2):  # chains of strands
-        reach = cv2.dilate(grown.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
-        for k, phrase in items:
-            if phrase is not None or k.sum() > limit or (k & grown).sum() >= k.sum() or not (k & reach).any():
-                continue
-            if (k & avoid).sum() > 0.05 * k.sum() or np.linalg.norm(lab[k].mean(0) - colour) > HAIR_COLOUR_GAP:
-                continue
-            grown |= k
-    return grown
+def given_by_care(items: list[tuple[np.ndarray, str | None]], m: np.ndarray, part: str) -> bool:
+    """True if a shape described with a --care word (hair, neck, face/skin) already covers most of ``m``."""
+    same = CARE_SAME.get(part, ())
+    return any(q in same and (k & m).sum() >= 0.6 * m.sum() for k, q in items)
 
 
 def add_details(items: list[tuple[np.ndarray, str | None]], image: Image.Image, device: str, style: str = "cartoon",
-                log=print):
+                log=print, source: Image.Image | None = None):
     """Add face detail to ``items`` (``(mask, phrase)`` pairs in painter's order, bottom first).
 
-    Earlier face shapes are dropped first, so the stage can be rerun. Hair, neck and skin go in by area, like
+    ``source`` is the original photo: the models read their crops from it (sharper than the downscaled trace image
+    on small faces) while the shapes are drawn at the size of ``image``. Earlier face shapes are dropped first, so
+    the stage can be rerun. Hair, neck and skin go in by area, like
     ``--care`` shapes (so smaller automatic shapes stay on top), skin directly above the hair; everything else goes
     on top. Returns the new items and a count per phrase.
     """
-    items = [(m, p) for m, p in items if p not in PHRASES]
+    items = [(m, p) for m, p in items if not (p and p.startswith(PREFIX))]
     full_hair = parse_full(image, device)
     boxes = [b for b in fan().face_detector.detect_from_image(np.asarray(image.convert("RGB")))
              if min(b[2] - b[0], b[3] - b[1]) >= MIN_FACE]
@@ -428,15 +456,13 @@ def add_details(items: list[tuple[np.ndarray, str | None]], image: Image.Image, 
     tops: list[tuple[np.ndarray, str | None]] = []
     for box in sorted(boxes, key=lambda b: -(b[2] - b[0]) * (b[3] - b[1])):
         hair = None
-        shapes = face_shapes(image, box, device, style, full_hair=full_hair)
-        face_parts = [m for m, q in shapes if q in ("skin", "neck")]
-        if face_parts and any(q == "hair" for _, q in shapes):
-            avoid = np.logical_or.reduce(face_parts)
-            shapes = [(grow_hair(m, items, np.asarray(image.convert("RGB")), avoid) if q == "hair" else m, q)
-                      for m, q in shapes]
+        shapes = face_shapes(image, box, device, style, full_hair=full_hair, source=source)
         for m, phrase in shapes:
             counts[phrase] = counts.get(phrase, 0) + 1
             if phrase in ("hair", "neck", "skin"):
+                if given_by_care(items, m, phrase):  # your --care hair (neck, face) is used as it is
+                    counts[phrase] -= 1
+                    continue
                 # the trace's own shape for the same thing would peek out as slivers: replace it
                 items = [(k, q) for k, q in items if q is not None or not same_thing(k, m)]
                 pos = insert_pos(items, m)
@@ -444,8 +470,8 @@ def add_details(items: list[tuple[np.ndarray, str | None]], image: Image.Image, 
                     hair = m
                 elif phrase == "skin" and hair is not None:  # never below its own hair
                     pos = max(pos, 1 + next(i for i, (k, _) in enumerate(items) if k is hair))
-                items.insert(pos, (m, phrase))
+                items.insert(pos, (m, PREFIX + phrase))
             else:
-                tops.append((m, phrase))
+                tops.append((m, PREFIX + phrase))
     log("  " + ", ".join(f"{n} {p}" for p, n in counts.items()))
     return items + tops, counts

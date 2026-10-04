@@ -40,9 +40,10 @@ Regenerate them with `benchmarks/compare.py`.
 | [lake-friends](faces/lake-friends/) | [Tim Mossholder](https://unsplash.com/photos/hOF1bWoet_Q) | 5, one in sunglasses |
 | [stairs](faces/stairs/) | [Joel Muniz](https://unsplash.com/photos/HvZDCuRnSaY) | 5, one in clear glasses, one turned |
 
-Traced with `--max-side 1280 --grid 48 --impact 3e-5 --rounds 3` (no `--care`), then `tracesmart faces` in both styles.
+Traced with `--max-side 1280 --grid 48 --impact 3e-5 --rounds 3`, once automatic and once with `--care "person, hand, bag, coat, hair"`, then `tracesmart faces` in both styles.
 Each folder holds `source.jpg`, `vector-trace.svg` (the plain trace), `vector-cartoon.svg`, `vector-detailed.svg`,
-`compare.jpg` (photo, trace only, cartoon, detailed), `panels/` (each on its own), `detect.jpg` (the detected faces),
+`compare.jpg` (photo, trace only, cartoon, detailed), `overview.jpg` (the same two rows, automatic and traced with
+`--care "person, hand, bag, coat, hair"`, with an extra column showing the face boxes, the face parse and the landmarks), `panels/` (each on its own), `detect.jpg` (the detected faces),
 `parse.jpg` (face parsing from per-face crops against the whole image), `steps/face-N.jpg` (photo crop, parsing,
 landmarks, cartoon, detailed for each face) and `run.json`. Regenerate with `benchmarks/make_face_examples.py`.
 
