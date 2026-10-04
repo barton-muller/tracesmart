@@ -16,7 +16,9 @@ that would break this are moved back to where the flat stack had them.
 """
 from dataclasses import dataclass, field
 
+import cv2
 import numpy as np
+from scipy import ndimage
 
 MAX_ERR = 3 * 255.0**2
 
@@ -109,8 +111,94 @@ def depths(n: int, pairs: list[tuple[int, int]]) -> list[int]:
     return depth
 
 
+def convex_hull(mask: np.ndarray) -> np.ndarray:
+    """Filled convex hull of a mask."""
+    contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    out = np.zeros(mask.shape, np.uint8)
+    if contours:
+        cv2.fillConvexPoly(out, cv2.convexHull(np.vstack(contours)), 1)
+    return out.astype(bool)
+
+
+def object_groups(masks: list[np.ndarray], phrases: list[str | None], anchors: set[str], inside: float = 0.5,
+                  contact: float = 0.3, max_ratio: float = 0.6, first: int = 0, hull: float = 0.7,
+                  hull_ratio: float = 0.1) -> dict[int, int]:
+    """Which shapes belong to which object, as ``{shape: anchor}``.
+
+    Anchors are the described shapes whose phrase is in ``anchors`` (for example ``person``). Another shape joins an
+    anchor if at least ``inside`` of it lies in the anchor's mask (a shirt on a person), or if at least ``contact`` of
+    its outline borders the anchor (a backpack, which SAM does not count as part of the person), or, for small thin
+    things such as a hiking pole, at least ``hull`` of it lies in the anchor's convex hull and it is at most
+    ``hull_ratio`` of the anchor's area; and it is clearly
+    smaller than the anchor (at most ``max_ratio`` of its area), so big background shapes are never taken. Shapes
+    before index ``first`` (the generated fill for uncovered areas) are ignored.
+    """
+    names = {a.lower() for a in anchors}
+    heads = [i for i, p in enumerate(phrases) if i >= first and p and p.lower() in names]
+    if not heads:
+        return {}
+    areas = [int(m.sum()) for m in masks]
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    hulls = {a: convex_hull(masks[a]) for a in heads} if hull > 0 else {}
+    attach: dict[int, int] = {}
+    for i, m in enumerate(masks):
+        if i < first or i in heads or areas[i] < 100:
+            continue
+        ring = cv2.dilate(m.astype(np.uint8), kernel).astype(bool) & ~m
+        ring_px = int(ring.sum())
+        best, best_score = -1, 0.0
+        for a in heads:
+            if areas[i] > max_ratio * areas[a]:
+                continue
+            share = np.count_nonzero(m & masks[a]) / areas[i]
+            touch = np.count_nonzero(ring & masks[a]) / ring_px if ring_px else 0.0
+            score = max(share if share >= inside else 0.0, touch if touch >= contact else 0.0)
+            if score == 0.0 and a in hulls and areas[i] <= hull_ratio * areas[a]:
+                in_hull = np.count_nonzero(m & hulls[a]) / areas[i]
+                score = in_hull if in_hull >= hull else 0.0
+            if score > best_score:
+                best, best_score = a, score
+        if best >= 0:
+            attach[i] = best
+    return attach
+
+
+def complete_under(masks: list[np.ndarray], attach: dict[int, int], n_gaps: int, grow: int = 2) -> list[np.ndarray]:
+    """Extend the shapes below each object so that lifting the object leaves no hole.
+
+    Where an object stands, the shapes under it (the ground, say) are missing: SAM masks stop at the object's
+    outline. Every pixel under an object's silhouette that no lower shape covers is given to the nearest lower shape.
+    That area is hidden by the object, so the picture does not change. The first ``n_gaps`` shapes are the generated
+    fill for uncovered areas and are not used as owners.
+    """
+    members: dict[int, list[int]] = {}
+    for j, a in attach.items():
+        members.setdefault(a, []).append(j)
+    grouped = set(attach) | set(members)
+    out = list(masks)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * grow + 1, 2 * grow + 1))
+    for anchor, js in members.items():
+        group = [anchor, *js]
+        silhouette = np.zeros_like(masks[0])
+        for g in group:
+            silhouette |= masks[g]
+        silhouette = cv2.dilate(silhouette.astype(np.uint8), kernel).astype(bool)
+        owner = np.full(masks[0].shape, -1, np.int32)
+        for i in range(n_gaps, min(group)):
+            if i not in grouped:
+                owner[out[i]] = i  # the topmost lower shape at each pixel
+        holes = silhouette & (owner < 0)
+        if not holes.any() or (owner >= 0).sum() == 0:
+            continue
+        nearest = ndimage.distance_transform_edt(owner < 0, return_distances=False, return_indices=True)
+        given = owner[nearest[0], nearest[1]]
+        for o in np.unique(given[holes]):
+            out[o] = out[o] | (holes & (given == o))
+    return out
+
+
 def hierarchy(masks: list[np.ndarray], inter: dict[tuple[int, int], int], pairs: list[tuple[int, int]],
-              contained: float = 0.85, bigger: float = 1.5) -> list[int]:
+              contained: float = 0.85, bigger: float = 1.5, attach: dict[int, int] | None = None) -> list[int]:
     """Parent of every shape (-1 for none): the smallest earlier shape that contains it.
 
     ``contained`` is the share of the child inside the parent, ``bigger`` how much larger the parent must be.
@@ -123,13 +211,19 @@ def hierarchy(masks: list[np.ndarray], inter: dict[tuple[int, int], int], pairs:
         inside = areas[j] and n / areas[j] >= contained and areas[i] >= bigger * areas[j]
         if inside and (parent[j] == -1 or areas[i] < areas[parent[j]]):
             parent[j] = i
+    for j, a in (attach or {}).items():  # object membership (a backpack on its hiker) beats plain containment
+        parent[j] = a
     for _ in range(len(masks)):
         order = flatten(tree(parent))
         pos = {k: p for p, k in enumerate(order)}
         bad = [(i, j) for i, j in pairs if pos[i] > pos[j]]
         if not bad:
             return parent
-        parent[bad[0][1]] = -1  # nesting only moves a shape earlier, so the later shape of the pair is the one to free
+        i, j = bad[0]  # i was painted first but now comes after j: free whichever of the two nesting moved
+        victim = j if parent[j] != -1 else i
+        if parent[victim] == -1:
+            break
+        parent[victim] = -1
     return [-1] * len(masks)
 
 

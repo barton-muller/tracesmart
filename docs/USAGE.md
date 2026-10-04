@@ -64,7 +64,7 @@ uv run tracesmart rerender photo.jpg out/masks.npz --layers depth
 | `--layers` | Result |
 |---|---|
 | `none` (default) | A flat stack of shapes |
-| `objects` | Parts nested in the shape that contains them: a hat inside its person becomes a child of that person's group (`person-18-group`), so selecting the group moves or recolours the whole person |
+| `objects` | Each object becomes a group. With `--group person` (the default) every person's shirt, shorts, boots, hat, backpack and pole are nested in that person's group (`person-18-group`); other parts nest in the shape that contains them. Select the group to move or recolour the whole person. The shapes below it (ground, forest) are extended under it, so lifting or moving the group leaves no hole; `--no-complete` turns that off |
 | `levels` | Three Inkscape layers from coarse to fine: `1 Structure`, `2 Objects`, `3 Details`. Hide the last to simplify the picture |
 | `depth` | Inkscape layers from back to front (8 on the hikers). Shapes in one layer never overlap each other, so every layer is a clean cut-out. This is the layering of *Layered Image Vectorization via Semantic Simplification* (Wang et al., CVPR 2025), derived here from the painter's stack |
 
@@ -75,3 +75,23 @@ Both modes keep every pair of noticeably overlapping shapes in its original orde
 one tolerance: overlaps smaller than about 12% of the smaller shape (such as the 2 px strips where neighbours meet)
 are ignored, so along shared edges the two can differ by a pixel or two (about 0.1 to 0.5% of the pixels on the
 hikers). `benchmarks/layers_figure.py` makes the figure in the README.
+
+### How objects are grouped and completed
+
+![A hiker lifted out as one group and moved aside](move.jpg)
+
+*Panel 2: lifted out without completion leaves a hole, the flat backdrop colour. Panel 3: with completion the ground
+and forest continue behind. Panel 4: moved aside.*
+
+- **Grouping** (`--group`, default `person`). The described shapes whose phrase matches are the anchors. Another
+  shape joins an anchor if at least half of it lies inside the anchor, or at least 30% of its outline borders the
+  anchor (a backpack, which SAM does not count as part of the person), or, if it is small (at most 10% of the anchor),
+  at least 70% of it lies in the anchor's convex hull (a hiking pole). A shape never joins an anchor it is bigger than
+  60% of, so ground and trees are never taken. Use `--group "person, dog"` for more kinds of object.
+- **Completion** (`--complete`, default on). Under an object's silhouette, any pixel that no lower shape covers is
+  given to the nearest lower shape. That area is hidden by the object, so the picture does not change; it only means
+  the ground has no notch.
+- **Limits.** The edge between, say, ground and forest behind a lifted object is the halfway line between them, not
+  the true horizon, and a faint seam can show where two lower shapes meet. Things the rules miss stay behind when the
+  group moves (a stray hand, a part with little contact). Where another object overlaps, what is behind that one is
+  not completed.

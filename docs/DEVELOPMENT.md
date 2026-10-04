@@ -15,7 +15,8 @@ For anyone (human or agent) picking this project up. Written 2026-10-04. Agent-o
 
 ## Next steps, in rough order
 
-1. **Try the layered SVGs in Inkscape.** They were only checked by rendering with resvg and by tests; nobody has
+1. **Try the layered SVGs in Inkscape**, especially `--layers objects` (hiker groups plus completed ground; the
+   `move_figure.py` panels show what to expect). They were only checked by rendering with resvg and by tests; nobody has
    opened them in an editor yet. Decide the default for `--layers` (currently `none`).
 2. **Multi-level SAM** (cheap idea from the Wang et al. paper, see `references/notes/semantic-simplification.md`): run SAM
    on progressively simplified copies of the photo and pool the masks before "filter by impact".
@@ -50,6 +51,12 @@ SSIM 0.41; VTracer 1.0 watershed 18.1 / 0.44 (188 KB); VTracer 1.0 colour 18.5 /
 by design (tracesmart uses one flat colour per shape); visually it is the only one whose shapes are objects.
 
 ## Decisions and dead ends (so they are not repeated)
+
+- Object grouping (`layers.object_groups`) is geometric: SAM 3's "person" and "hiker" masks exclude backpacks, and
+  longer prompts did not fix that, so membership uses inside-share, outline contact and (for thin things) hull share.
+  `layers.complete_under` fills the notch an object leaves in the shapes below by nearest owner. The generated
+  gap-fill shapes (first `n_gaps` masks) must never be group members or owners; letting one join a group made the
+  completion silently do nothing.
 
 - Early attempts generated a wall of rocks procedurally (Voronoi, skyline packing, drop-and-settle). The user wanted
   the real stone shapes from a photo, which led to segmentation. That generator lives in a different repository.

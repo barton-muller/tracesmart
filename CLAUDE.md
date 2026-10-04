@@ -60,6 +60,8 @@ benchmarks/run_all.sh rerender|bench|assets                         # rebuild de
 - Layering must never change the painter's order of noticeably overlapping shapes (`layers.significant`); the tests
   render flat and layered SVGs and compare pixels. Tolerance is deliberate: ignoring seam-strip overlaps gives a far
   more useful structure (the exact version pulls most details into the structure layer).
+- `--layers objects` groups by geometry and completes the shapes below a group (`layers.object_groups`,
+  `layers.complete_under`). Gap-fill shapes (the first `n_gaps` masks in `render`) must never be members or owners.
 - Tracing keeps corners where the outline turns more than 35 degrees (windows stay rectangular); do not replace it
   with plain Catmull-Rom smoothing.
 - Don't add features the README doesn't need. Failed experiments were removed on purpose (tiled colour regions,

@@ -74,3 +74,52 @@ def test_depth_layers_never_overlap_inside_a_layer_and_keep_the_picture():
     pairs = lay.significant(inter, [int(m.sum()) for m in masks])
     depth = lay.depths(len(masks), pairs)
     assert all(depth[i] < depth[j] for i, j in pairs)  # a shape is always in front of what it covers
+
+
+def hiker_scene():
+    """Ground with a notch where a person stands; the person has a shirt on it and a backpack beside it."""
+    h, w = 120, 200
+    img = np.zeros((h, w, 3), np.uint8)
+    img[:60] = (120, 170, 230)  # sky
+    img[60:] = (110, 130, 90)  # ground, which continues under the person
+    img[40:110, 80:120] = (160, 80, 70)  # person
+    img[50:75, 85:115] = (230, 220, 200)  # shirt
+    img[50:100, 120:140] = (60, 90, 160)  # backpack, beside the person
+    img[30:40, 10:30] = (30, 100, 40)  # a tree, far away
+
+    def box(y0, y1, x0, x1):
+        m = np.zeros((h, w), bool)
+        m[y0:y1, x0:x1] = True
+        return m
+
+    ground = box(60, h, 0, w) & ~box(40, 110, 80, 120)  # SAM-style: the ground stops at the person's outline
+    ground &= ~box(50, 100, 120, 140)
+    masks = [box(0, 60, 0, w), ground, box(40, 110, 80, 120), box(50, 75, 85, 115), box(50, 100, 120, 140),
+             box(30, 40, 10, 30)]
+    return Image.fromarray(img), masks, ["sky", "ground", "person", "shirt", "backpack", "tree"]
+
+
+def test_object_groups_take_the_shirt_and_backpack_but_not_the_tree_or_ground():
+    _, masks, phrases = hiker_scene()
+    attach = lay.object_groups(masks, phrases, {"person"})
+    assert attach == {3: 2, 4: 2}  # shirt (inside) and backpack (touching), not sky, ground or tree
+
+
+def test_lifting_a_group_leaves_ground_not_a_hole_when_completion_is_on():
+    import xml.etree.ElementTree as ET
+
+    img, masks, phrases = hiker_scene()
+
+    def lifted(complete: bool) -> np.ndarray:
+        svg = render(img, masks, phrases, round_px=0, seam_px=0, layers="objects", complete=complete)[0]
+        tree = ET.fromstring(svg)
+        groups = [g for g in tree.iter("{http://www.w3.org/2000/svg}g") if g.get("id", "").startswith("person-")]
+        assert len(groups) == 1
+        parent = next(p for p in tree.iter() if groups[0] in list(p))
+        parent.remove(groups[0])
+        return pixels(ET.tostring(tree, encoding="unicode"))
+
+    ground_colour = np.array([110, 130, 90])
+    with_completion, without = lifted(True), lifted(False)
+    assert np.abs(with_completion[90, 100] - ground_colour).max() < 8  # under the person: ground
+    assert np.abs(without[90, 100] - ground_colour).max() > 8  # without completion it is a hole

@@ -54,7 +54,7 @@ LEVEL_NAMES = ("1 Structure", "2 Objects", "3 Details")
 
 
 def compose(mode: str, rgb: np.ndarray, masks: list[np.ndarray], names: list[tuple[str, str]],
-            elements: dict[int, str]) -> str:
+            elements: dict[int, str], attach: dict[int, int] | None = None) -> str:
     """Join the shape elements in stack order, optionally organised into groups or layers.
 
     ``objects`` nests parts inside the shape that contains them; ``levels`` puts shapes on Inkscape layers from
@@ -96,12 +96,12 @@ def compose(mode: str, rgb: np.ndarray, masks: list[np.ndarray], names: list[tup
         return (f'<g id="{sid}-group" inkscape:label="{label} (group)">{own}'
                 f'{"".join(emit(c) for c in node.children)}</g>')
 
-    return "".join(emit(n) for n in lay.tree(lay.hierarchy(masks, inter, pairs)))
+    return "".join(emit(n) for n in lay.tree(lay.hierarchy(masks, inter, pairs, attach=attach)))
 
 
 def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None] | None = None,
            round_px: float | None = None, tol: float | None = None, seam_px: float | None = None,
-           layers: str = "none"):
+           layers: str = "none", group: str = "person", complete: bool = True):
     """Stack ``masks`` (bottom first) into an SVG.
 
     Returns ``(svg, preview image, segment-map svg)``. Each shape is filled with the mean colour of its
@@ -113,6 +113,14 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
     phrases = phrases or [None] * len(masks)
     gaps = uncovered_regions(masks, max(20, int(0.0004 * h * w))) if masks else []
     masks, phrases = gaps + list(masks), [None] * len(gaps) + list(phrases)  # uncovered areas sit at the bottom
+    attach: dict[int, int] = {}
+    if layers == "objects":
+        # shapes that belong to an object (a hiker's shirt, boots and backpack) are grouped with it, and the shapes
+        # below it are extended under its silhouette so that lifting the group leaves no hole
+        attach = lay.object_groups(masks, phrases, {g.strip() for g in group.split(",") if g.strip()},
+                                   first=len(gaps))
+        if complete and attach:
+            masks = lay.complete_under(masks, attach, len(gaps))
     round_px = 0.0018 * max(h, w) if round_px is None else round_px
     tol = tol or max(1.0, 0.002 * max(h, w))
     if round_px > 0:
@@ -146,8 +154,8 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
         segments[i] = (f'<path id="{sid}" inkscape:label="{label}" fill="{hex_colour((r * 255, g * 255, b * 255))}" '
                        f'{edge} stroke-linejoin="round" d="{d}"/>')
     head = f'<svg {SVG_NS} width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
-    body = compose(layers, rgb, masks, names, paths)
-    seg_body = compose(layers, rgb, masks, names, segments)
+    body = compose(layers, rgb, masks, names, paths, attach)
+    seg_body = compose(layers, rgb, masks, names, segments, attach)
     svg = f'{head}<rect id="backdrop" width="{w}" height="{h}" fill="{hex_colour(backdrop)}"/>{body}</svg>\n'
     seg_svg = f'{head}<rect width="{w}" height="{h}" fill="#222222"/>{seg_body}</svg>\n'
     return svg, Image.fromarray(preview), seg_svg
@@ -155,11 +163,12 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
 
 def write_outputs(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None], out: Path,
                   round_px: float | None = None, zoom: float = 3.0, seam_px: float | None = None,
-                  layers: str = "none") -> None:
+                  layers: str = "none", group: str = "person", complete: bool = True) -> None:
     """Write the SVG, a hi-res PNG, the segment map (SVG + PNG) and a source | segments | vector comparison."""
     import resvg_py
 
-    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px, seam_px=seam_px, layers=layers)
+    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px, seam_px=seam_px, layers=layers,
+                                   group=group, complete=complete)
     (out / "vector.svg").write_text(svg)
     (out / "segments.svg").write_text(seg_svg)
     preview.save(out / "preview.png")

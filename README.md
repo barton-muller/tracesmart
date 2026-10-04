@@ -60,11 +60,17 @@ problems) and `out/compare.png` puts the photo, segments and result side by side
 ![The three detail levels, built up, and one object group on its own](docs/layers.jpg)
 
 `--layers levels` puts the shapes on three Inkscape layers, from coarse structure to fine detail; hide the last
-layer to simplify the picture. `--layers objects` nests parts inside the object they belong to, so a hat lives in its
-person's group and you can move or recolour the whole hiker (panel 5). `--layers depth` gives layers from back to
-front in which no two shapes overlap, the layering used by Wang et al. (CVPR 2025). A shape's level is how much it reduces the
-error against the photo, SAMVG's own measure. Neither option changes how the picture looks, apart from a pixel or two
-along shared edges. Details in [docs/USAGE.md](docs/USAGE.md#layers-for-editing).
+layer to simplify the picture. `--layers depth` gives layers from back to front in which no two shapes overlap, the
+layering used by Wang et al. (CVPR 2025). A shape's level is how much it reduces the error against the photo,
+SAMVG's own measure.
+
+`--layers objects` makes each person one group (shirt, boots, hat, backpack, pole) and extends the ground and
+forest under it, so you can lift the hiker out and move them without leaving a hole:
+
+![A hiker lifted out as one group, with and without background completion, and moved aside](docs/move.jpg)
+
+The layers do not change how the picture looks, apart from a pixel or two along shared edges. Details and limits in
+[docs/USAGE.md](docs/USAGE.md#layers-for-editing).
 
 ## Hardware and speed
 

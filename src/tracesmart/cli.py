@@ -53,6 +53,10 @@ def trace(
     layers: str = typer.Option(
         "none", help="organise the SVG: none (flat), objects (parts nested in their object), "
                      "levels (Inkscape layers, coarse to fine), depth (layers back to front, no overlaps in a layer)"),
+    group: str = typer.Option(
+        "person", help="with --layers objects: phrases whose shapes become groups, e.g. 'person, dog'"),
+    complete: bool = typer.Option(True, help="with --layers objects: extend the shapes below a group under it, so "
+                                             "moving the group leaves no hole"),
     zoom: float = typer.Option(3.0, help="scale of the PNG renders"),
 ):
     """Segment IMAGE and write stacked, flat-colour SVG shapes plus PNG previews."""
@@ -74,7 +78,7 @@ def trace(
         "care_threshold": care_threshold, "max_side": max_side}, indent=1))
     np.savez_compressed(out / "masks.npz", masks=np.stack(masks), phrases=np.array([p or "" for p in phrases]))
     img.save(out / "source.png")
-    write_outputs(img, masks, phrases, out, round_px, zoom, seam_px, layers)
+    write_outputs(img, masks, phrases, out, round_px, zoom, seam_px, layers, group, complete)
     typer.echo(f"{len(masks)} shapes -> {out}/vector.svg")
 
 
@@ -89,6 +93,10 @@ def rerender(
     layers: str = typer.Option(
         "none", help="organise the SVG: none (flat), objects (parts nested in their object), "
                      "levels (Inkscape layers, coarse to fine), depth (layers back to front, no overlaps in a layer)"),
+    group: str = typer.Option(
+        "person", help="with --layers objects: phrases whose shapes become groups, e.g. 'person, dog'"),
+    complete: bool = typer.Option(True, help="with --layers objects: extend the shapes below a group under it, so "
+                                             "moving the group leaves no hole"),
     zoom: float = 3.0,
 ):
     """Redraw the outputs from saved masks in a few seconds (no model needed)."""
@@ -98,7 +106,8 @@ def rerender(
     out = out or masks.parent
     out.mkdir(parents=True, exist_ok=True)
     phrases = [p or None for p in data["phrases"].tolist()] if "phrases" in data else None
-    write_outputs(load_image(image, max_side), list(data["masks"]), phrases, out, round_px, zoom, seam_px, layers)
+    write_outputs(load_image(image, max_side), list(data["masks"]), phrases, out, round_px, zoom, seam_px, layers,
+                  group, complete)
     typer.echo(f"redrawn -> {out}")
 
 
