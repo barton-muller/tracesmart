@@ -9,6 +9,12 @@ patches.**
 *Left: the photo. Middle: what it found, every shape in its own colour. Right: the result, 127 flat-colour shapes in
 a 75 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Unsplash.*
 
+![Five friends by the lake: the photo, the trace without faces, cartoon faces, detailed faces](examples/faces/lake-friends/compare.jpg)
+
+*And faces: a second stage, `tracesmart faces`, draws eyes, brows, mouths, teeth, glasses and hair on a finished trace.
+Left to right: the photo, the trace without faces, cartoon faces, detailed faces. Photo by
+[Tim Mossholder](https://unsplash.com/photos/hOF1bWoet_Q) on Unsplash.*
+
 ## Why use it
 
 - **One shape per thing.** A hat, a backpack, a window: shapes you can recolour, move or redraw, not fragments. A
@@ -17,6 +23,8 @@ a 75 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Un
   names the shapes (`window-12`) so you can select them all in your editor.
 - **Layered for editing.** `--layers objects` nests parts in their object (a hat inside its person) and
   `--layers levels` and `--layers depth` put shapes on Inkscape layers, from coarse to fine or from back to front.
+- **Faces.** `tracesmart faces` adds cartoon eyes, brows, mouths, teeth, glasses and hair to a finished trace, on top of
+  whatever your `--care` words segmented. It uses face parsing and landmarks, so no extra words are needed.
 - **Light.** Typically 50 to 100 KB and 70 to 250 paths.
 - **Local.** Runs on your machine, including the Apple GPU. Nothing is uploaded.
 
@@ -41,6 +49,24 @@ problems) and `out/compare.png` puts the photo, segments and result side by side
 `--care` uses SAM 3, whose weights are gated: request access on the
 [facebook/sam3](https://huggingface.co/facebook/sam3) page, accept Meta's licence, then run
 `uv run hf auth login` once. Automatic mode does not need it.
+
+## Faces
+
+SAM cannot resolve an eye a few pixels wide, so faces come out blank. `tracesmart faces` runs on a finished trace and
+draws eyes, brows, mouths, teeth, glasses and hair as their own named shapes (`face-eye-81`). The default style is a
+cartoon face: eyes as dots, a line or a dark open mouth with white teeth, thin brows, no nose. It works with `--care`:
+your shapes (person, hand, bag, coat, hair) are kept and the face details go on top of them.
+
+![One face, step by step: photo crop, face parsing, landmarks, cartoon, detailed](examples/faces/lake-friends/steps/face-4.jpg)
+
+*photo crop · face parsing · landmarks · cartoon · detailed.*
+
+```bash
+uv sync --extra faces
+uv run --extra faces tracesmart faces photo.jpg out/masks.npz
+```
+
+How it works, the examples (with a row for `--care` traces), limits and timings: [docs/FACES.md](docs/FACES.md).
 
 ## How it works
 
@@ -71,25 +97,6 @@ forest under it, so you can lift the hiker out and move them without leaving a h
 
 The layers do not change how the picture looks, apart from a pixel or two along shared edges. Details and limits in
 [docs/USAGE.md](docs/USAGE.md#layers-for-editing).
-
-## Faces
-
-SAM cannot resolve an eye a few pixels wide, so faces come out blank. `tracesmart faces` is a second stage that runs on
-a finished trace and draws eyes, brows, mouths, teeth, glasses and hair as their own named shapes, from face parsing
-and landmarks. The default style is a cartoon face: eyes as dots, a line or a dark open mouth with white teeth, thin
-brows, no nose.
-
-![Group on the stairs: the photo, the plain trace, cartoon faces, detailed faces](examples/faces/stairs/compare.jpg)
-
-*photo · trace only · cartoon faces · detailed faces. Photo by [Joel Muniz](https://unsplash.com/photos/HvZDCuRnSaY)
-on Unsplash.*
-
-```bash
-uv sync --extra faces
-uv run --extra faces tracesmart faces photo.jpg out/masks.npz
-```
-
-How it works, the examples, limits and timings: [docs/FACES.md](docs/FACES.md).
 
 ## Hardware and speed
 

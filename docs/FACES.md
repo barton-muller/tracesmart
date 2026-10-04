@@ -106,7 +106,7 @@ panels, and the step figures used below. Credits are in [../examples/README.md](
 
 Every step for every face, left to right: photo crop, parsing, landmarks, cartoon, detailed:
 
-![Steps for one face](../examples/faces/stairs/steps/face-3.jpg)
+![Steps for one face](../examples/faces/lake-friends/steps/face-4.jpg)
 
 The other faces are in `steps/` in each example folder.
 
@@ -127,7 +127,8 @@ Face size is the shorter side of the detected box on the processed image.
 
 - **Turned heads** that fail the landmark checks get only hair, neck, skin and whatever the parse alone supplies.
 - **Hair the parser reads as clothing** (long hair over a shoulder) can still end in a flat edge.
-- **Glasses** are one solid shape, so a clear pair hides the eyes behind it when the landmarks are rejected.
+- **Glasses** are one solid shape. A clear pair hides detail behind it: in [`stairs/steps/face-3.jpg`](../examples/faces/stairs/steps/face-3.jpg) the
+  eyes are only small dots on the glasses and the detailed style looks the same as the cartoon one.
 - **Small, blurry faces** (about 60 px) give a noisy parse; below 40 px only brows are drawn.
 - Tested by eye on these two photos and one 60 px family photo, not against a benchmark.
 
