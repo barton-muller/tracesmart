@@ -30,9 +30,10 @@ WIDE = 2.2  # the wide crop for hair and neck is this many times larger, so long
 SIDE = 512  # crop size fed to both models
 MIN_FACE = 24  # px: smaller detections are ignored
 SMALL_FACE = 40  # px: from here a face also gets lips and an eye line
-SEG_FACE = 60  # px: from here the parse gives the brows, the open mouth and (if landmarks fail) the eye dots
-FULL_FACE = 80  # px: from here eyes get white, iris and pupil, and an open mouth gets teeth
+SEG_FACE = 60  # px: from here the parse gives brows, the open mouth with teeth, and eye dots if landmarks fail
+FULL_FACE = 80  # px: from here the detailed style draws eye whites, irises and pupils
 # (hair, skin and neck at any size; never a nose)
+EYE_CLOSED = 0.2  # eye height as a share of its width below which it counts as closed (laughing, squinting)
 MIN_EYE_SPACING = 0.3  # eye distance as a share of the face box width: less means a profile or bad landmarks
 MAX_NOSE_OFFSET = 0.45  # nose tip sideways from the mid-eye point, in eye spacings
 BROW_DROP = 0.3 # FAN's brow points trace the brow's top edge: move them this share of the way to the eye
@@ -114,12 +115,24 @@ def teeth_mask(inner: np.ndarray, rgb: np.ndarray) -> np.ndarray:
     return cv2.morphologyEx(ok.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8)).astype(bool)
 
 
-def eye_parts(rgb: np.ndarray, grey: np.ndarray, eye: np.ndarray, upper: np.ndarray) -> list[tuple[np.ndarray, str]]:
+def eye_closed(eye: np.ndarray) -> bool:
+    """A closed or squinting eye, from its six landmarks: too flat to show a white or an iris."""
+    width = float(np.linalg.norm(eye[3] - eye[0]))
+    return bool(np.ptp(eye[:, 1]) < max(1.5, EYE_CLOSED * width))
+
+
+def eye_arc(eye: np.ndarray, spacing: float, shape: tuple[int, int]) -> tuple[np.ndarray, str]:
+    """A closed eye as one dark arc along the lid, the same in every style."""
+    return fill(shape, eye[:4], max(2, round(0.07 * spacing))), "eye"
+
+
+def eye_parts(rgb: np.ndarray, grey: np.ndarray, eye: np.ndarray, upper: np.ndarray,
+              spacing: float) -> list[tuple[np.ndarray, str]]:
     """White, iris, pupil and lid line of one eye from its six landmarks (``upper``: the four lid points)."""
     h, w = grey.shape
     width = float(np.linalg.norm(eye[3] - eye[0]))
-    if np.ptp(eye[:, 1]) < max(1.0, 0.12 * width):  # closed (laughing, blinking): just the lid line
-        return [(fill((h, w), upper, max(1, round(0.12 * width))), "eyelid")]
+    if eye_closed(eye):
+        return [eye_arc(eye, spacing, (h, w))]
     area = fill((h, w), grow(eye, 1.1))
     weight = np.where(area, (255.0 - grey) ** 2, 0)
     ys, xs = np.nonzero(area)
@@ -129,15 +142,14 @@ def eye_parts(rgb: np.ndarray, grey: np.ndarray, eye: np.ndarray, upper: np.ndar
     out = [(area, "eye white"), (disc((h, w), centre, radius) & area, "iris")]
     if radius >= 3:
         out.append((disc((h, w), centre, 0.45 * radius) & area, "pupil"))
-    out.append((fill((h, w), upper, max(1, round(0.1 * width))), "eyelid"))
+    out.append((fill((h, w), upper, max(2, round(0.1 * width))), "eyelid"))
     return out
 
 
 def cartoon_eye(grey: np.ndarray, eye: np.ndarray, spacing: float, shape: tuple[int, int]) -> tuple[np.ndarray, str]:
     """An eye as a dot where the eye is darkest, or an arc if it is closed (laughing, blinking)."""
-    width = float(np.linalg.norm(eye[3] - eye[0]))
-    if np.ptp(eye[:, 1]) < max(1.0, 0.12 * width):
-        return fill(shape, eye[:4], max(1, round(0.07 * spacing))), "eye"
+    if eye_closed(eye):
+        return eye_arc(eye, spacing, shape)
     area = fill(shape, grow(eye, 1.1))
     weight = np.where(area, (255.0 - grey) ** 2, 0)
     ys, xs = np.nonzero(area)
@@ -301,7 +313,7 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
         if style == "detailed" and lips is not None:
             parts.append((lips, "lips"))
         parts.append((mouth, "mouth"))
-        teeth = teeth_from_mouth(mouth, rgb) if big else None
+        teeth = teeth_from_mouth(mouth, rgb)  # the parse is reliable wherever the mouth is parsed at all
         if teeth is not None:
             parts.append((teeth, "teeth"))
     elif lips is not None and style == "cartoon":  # closed mouth: a line along the lips
@@ -338,13 +350,15 @@ def face_shapes(image: Image.Image, box, device: str, style: str = "cartoon", mi
             for eye in (pts[36:42], pts[42:48]):
                 width = np.linalg.norm(eye[3] - eye[0])
                 near = [c for c in centres if np.linalg.norm(c - eye.mean(0)) < 0.6 * width]
-                closed = np.ptp(eye[:, 1]) < max(1.0, 0.12 * width)
-                if style == "cartoon" and near and not closed:
+                closed = eye_closed(eye)
+                if closed:  # the landmarks decide where the eyes are, and whether they are shut
+                    parts.append(eye_arc(eye, gap, shape))
+                elif style == "cartoon" and near:
                     parts.append((disc(shape, near[0], max(1.2, 0.09 * gap)), "eye"))
                 elif style == "cartoon":
                     parts.append(cartoon_eye(grey, eye, gap, shape))
                 elif big:
-                    parts += eye_parts(rgb, grey, eye, eye[:4])
+                    parts += eye_parts(rgb, grey, eye, eye[:4], gap)
                 else:
                     parts.append((fill(shape, eye[:4], max(1, round(0.14 * width))), "eyelid"))
         elif len(centres) == 2:  # landmarks rejected: dots at the parsed eyes

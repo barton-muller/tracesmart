@@ -60,3 +60,11 @@ def test_hair_colour_ignores_bright_gaps_between_curls():
 
     px = np.array([[40, 30, 20]] * 70 + [[200, 220, 255]] * 20, float)  # brown curls with sky showing through
     assert shape_colour("hair", px).max() < 50 and shape_colour(None, px).max() > 60
+
+
+def test_squinting_eyes_count_as_closed_in_both_styles():
+    open_eye = np.array([[0, 5], [6, 0], [12, 0], [18, 5], [12, 10], [6, 10]], float)  # height about half the width
+    shut = np.array([[0, 5], [6, 4], [12, 4], [18, 5], [12, 6], [6, 6]], float)
+    assert not faces.eye_closed(open_eye) and faces.eye_closed(shut)
+    arc, phrase = faces.eye_arc(shut, 40.0, (12, 20))
+    assert phrase == "eye" and arc.sum() >= 18

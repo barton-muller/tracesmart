@@ -63,6 +63,10 @@ Added 2026-10-04, uncommitted at the time of writing. A second stage over a fini
   limit: hair that every pass labels as clothing (long hair over a shoulder) still ends flat. Growing the hair mask
   along same-coloured trace shapes was considered and not built: it fixes single cases, not the method.
 - Sapiens2 segmentation (1B, tried by the user online) was not better on faces: dropped.
+- Speed (Apple GPU for the parser, CPU for FAN, 5 faces, 853x1280 and 1280x853 photos): faces stage about 8 s warm and
+  16 s cold, about 1.5 s per face; parse crops 2.5 s (10 passes), whole-image hair parse 0.9 s, landmarks 0.6 s,
+  drawing 1.9 s, placing shapes 1.3 to 2.2 s; rendering 1 to 1.2 s; peak 1.7 GB. The drawing and the shape comparisons
+  work on full-size masks: cropping them to the face's bounding box is the obvious saving.
 - Test photos: family photo (60 px faces), and two Unsplash group photos in `tests/images/joel.jpg`, `tim.jpg`
   (gitignored; credits: Joel Muniz, Tim Mossholder).
 - `uv sync --extra faces` also installs `opencv-python` and `opencv-contrib-python` next to the project's
