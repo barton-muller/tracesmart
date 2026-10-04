@@ -33,7 +33,7 @@ uv run --extra faces tracesmart faces photo.jpg out/masks.npz --max-side 1280   
 ```
 
 `--style cartoon` (default) draws each eye as a dot (an arc if it is closed), the mouth as a line or a dark open
-shape (plus a teeth strip on big faces), brows as strokes, and no nose. `--style detailed` draws eye whites, irises,
+shape with white teeth, brows as thin strokes, and no nose. Faces of 60 px and up take these from the segmentation. `--style detailed` draws eye whites, irises,
 pupils, lids, lips and teeth. Detail falls with face size: under 40 px only hair, skin and brows, under 80 px also
 eyes and mouth, above that teeth too. Glasses are drawn when the parser finds them (filled lenses for sunglasses,
 rings otherwise). Colours are the photo's, nudged towards what a part must look like (`render.PRIOR_COLOURS`).

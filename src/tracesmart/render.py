@@ -43,6 +43,9 @@ def shape_colour(phrase: str | None, pixels: np.ndarray) -> np.ndarray:
     if phrase == "glasses" and len(pixels) >= 20:
         far = np.linalg.norm(pixels - np.median(pixels, 0), axis=1)
         return pixels[far >= np.quantile(far, 0.65)].mean(0)
+    if phrase == "hair" and len(pixels) >= 20:  # gaps between curls show sky or background: use the darker pixels
+        lum = pixels @ np.array([0.299, 0.587, 0.114])
+        return pixels[lum <= np.quantile(lum, 0.7)].mean(0)
     if phrase in PRIOR_COLOURS:
         target, k = PRIOR_COLOURS[phrase]
         return (1 - k) * mean + k * np.asarray(target, float)

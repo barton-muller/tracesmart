@@ -32,22 +32,37 @@ For anyone (human or agent) picking this project up. Written 2026-10-04. Agent-o
 Added 2026-10-04, uncommitted at the time of writing. A second stage over a finished `masks.npz`; optional extra
 `faces` (`face-alignment`). Usage is in `docs/USAGE.md`.
 
-- Pipeline: RetinaFace boxes (via face-alignment; SAM 3 "face" gave a spurious tiny box, BlazeFace missed faces) ->
+- Pipeline: RetinaFace boxes (via face-alignment; SAM 3 "face" also found a 20 px occluded face that RetinaFace missed but needs the gated model; BlazeFace missed several faces) ->
   crop with margin -> SegFormer face parsing (hair, neck, skin, glasses) and FAN landmarks (eyes, brows, mouth).
   Hair/neck/skin are inserted by area like `--care` shapes (skin above its hair); parts go on top of everything.
-- Drawn from landmarks, not traced: eye dot at the darkest spot of the eye (arc if closed), mouth line or dark open
-  shape, teeth = pale unsaturated pixels of the open mouth, brows = darkest half of the dropped landmark band
-  (`BROW_DROP`: FAN traces the brow's top edge), glasses = parsed region (sunglasses) or a ring per eye from the
-  parsed region's extent. `render.PRIOR_COLOURS` nudges a part's sampled mean towards its known colour (teeth white,
-  pupils dark), keyed on the phrase, so `rerender` keeps it.
+- Drawn by rule, parse first: on faces of 60 px and up the parse gives the brows, the open mouth, the closed-mouth
+  line (lips) and the eye dots; FAN landmarks give closed-eye arcs and everything on smaller faces. Brows and lips
+  become thin strokes along the mask's smoothed centre line (`faces.stroke`), not the ragged parsed shape. Teeth are
+  the parsed inside-of-mouth shape pulled in from the lips (`teeth_from_mouth`) when it is mostly pale; the user judged
+  the parse better than the earlier pale-pixel mask. Glasses are the parsed region as one solid shape; the colour of
+  clear frames comes from the pixels furthest from the median (`render.shape_colour`). Eyes are never traced from
+  landmark polygons: that gave grey blobs.
+- `render.PRIOR_COLOURS` nudges a part's sampled mean towards its known colour (teeth white, eyes black), keyed on the
+  phrase, so `rerender` keeps it. Hair uses the darkest 70% of its pixels: the parse covers the gaps between curls and
+  the plain mean turned curly hair grey. Shapes cannot have holes (`trace.mask_path` is outer contour only), which is
+  why glasses rings failed.
+- Placement: a face's hair, neck and skin are inserted just above the last larger shape that covers a quarter of
+  them (`insert_pos`; the shape list is not sorted by area, and first-smaller-shape put a girl's skin under her own
+  body shape). The trace's own shapes that are the same thing (IoU above 0.5, or inside and not tiny, `same_thing`)
+  are dropped, otherwise they peek out as grey slivers.
 - Detail tiers by face size (`SMALL_FACE`, `FULL_FACE`); no nose shape, ever (the user's call). A face whose landmarks
   do not fall on the parsed skin (turned head) gets only hair, neck and skin.
 - Tried and failed: face parsing alone (eyes are specks); plain-mean colours over landmark outlines (eyes and brows
   came out skin-coloured); MediaPipe Face Landmarker (478 points, but the Python 3.13 macOS wheel aborts with "Service
   is unavailable" in its Metal helper, in the sandbox and in the user's terminal; `mediapipe-silicon` is 0.9.3 for
   older Pythons with `protobuf<4`, not tried).
-- Ideas: Sapiens2 segmentation (`facebook/sapiens2-seg-0.8b`, 29 classes including teeth, lips, tongue, eyeglasses,
-  loads in transformers; multi-GB, custom licence) would replace the colour heuristics for teeth and glasses.
+- Face parsing on whole images vs crops (compared on two group photos): the parser is trained on face crops, so run on
+  a whole image it keeps long hair complete but breaks small faces and mislabels clothes. Per-face crops give good
+  faces but cut hair and neck at the crop edge, which showed as flat edges. So features come from a tight crop, hair and
+  neck also from a wider crop (`WIDE`), and hair near the face from a whole-image pass (`parse_full`). Remaining
+  limit: hair that every pass labels as clothing (long hair over a shoulder) still ends flat. Growing the hair mask
+  along same-coloured trace shapes was considered and not built: it fixes single cases, not the method.
+- Sapiens2 segmentation (1B, tried by the user online) was not better on faces: dropped.
 - Test photos: family photo (60 px faces), and two Unsplash group photos in `tests/images/joel.jpg`, `tim.jpg`
   (gitignored; credits: Joel Muniz, Tim Mossholder).
 - `uv sync --extra faces` also installs `opencv-python` and `opencv-contrib-python` next to the project's
