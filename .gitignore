@@ -16,3 +16,6 @@ wheels/
 tests/images/
 outputs/
 tracesmart-out/
+
+# Reference PDFs are fetched with references/fetch.sh, not committed
+references/papers/*.pdf

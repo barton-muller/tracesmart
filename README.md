@@ -15,7 +15,9 @@ a 75 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Un
   colour-clustering tracer gives about 14,000 patches and 15 MB for the same kind of photo.
 - **Tell it what matters.** `--care "window, red shutters, dog"` finds every instance by name, always keeps it, and
   names the shapes (`window-12`) so you can select them all in your editor.
-- **Light and editable.** Typically 50 to 100 KB and 70 to 250 paths.
+- **Layered for editing.** `--layers objects` nests parts in their object (a hat inside its person) and
+  `--layers levels` and `--layers depth` put shapes on Inkscape layers, from coarse to fine or from back to front.
+- **Light.** Typically 50 to 100 KB and 70 to 250 paths.
 - **Local.** Runs on your machine, including the Apple GPU. Nothing is uploaded.
 
 **The goal** is a simplified, editable illustration: low on detail, key features kept, flat colours you finish in
@@ -52,6 +54,17 @@ problems) and `out/compare.png` puts the photo, segments and result side by side
    near-duplicate automatic ones, and are outlined in magenta in the segment map.
 5. **Tracing**: each mask becomes one path. Real corners stay sharp (windows stay rectangular) and curves are
    smoothed. Each shape gets the mean colour of its visible pixels.
+
+## Layers, for editing
+
+![The three detail levels, built up, and one object group on its own](docs/layers.jpg)
+
+`--layers levels` puts the shapes on three Inkscape layers, from coarse structure to fine detail; hide the last
+layer to simplify the picture. `--layers objects` nests parts inside the object they belong to, so a hat lives in its
+person's group and you can move or recolour the whole hiker (panel 5). `--layers depth` gives layers from back to
+front in which no two shapes overlap, the layering used by Wang et al. (CVPR 2025). A shape's level is how much it reduces the
+error against the photo, SAMVG's own measure. Neither option changes how the picture looks, apart from a pixel or two
+along shared edges. Details in [docs/USAGE.md](docs/USAGE.md#layers-for-editing).
 
 ## Hardware and speed
 

@@ -9,17 +9,21 @@ The goal is a simplified, editable illustration (Inkscape, Affinity, Illustrator
 PSNR/SSIM against the photo is expected; do not "fix" it by adding detail or colour variation. Colours are plain
 means on purpose.
 
+**Picking this up in a new session? Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) first** (status, uncommitted work,
+next steps, environment locations), then `git status`.
+
 ## Commands
 
 Python 3.13, managed with **uv**. Always `uv run ...` / `uv add ...`; never pip.
 
 ```bash
 uv run tracesmart trace photo.jpg -o out/ [--care "window, roof"]   # the main command
-uv run tracesmart rerender photo.jpg out/masks.npz                  # redraw from saved masks, no model
+uv run tracesmart rerender photo.jpg out/masks.npz --layers depth   # redraw from saved masks, no model (layers: none|objects|levels|depth)
 uv run tracesmart index --folder outputs                            # HTML page over outputs/<image>/<variant>/
 uv run pytest -q                                                    # fast, no models needed
 uv run ruff check .                                                 # line length 120
-uv run --group bench python benchmarks/compare.py --help            # vs vtracer / SuperSVG
+uv run --group bench python benchmarks/compare.py --help            # vs vtracer (0.6 and 1.0) / SuperSVG
+benchmarks/run_all.sh rerender|bench|assets                         # rebuild derived assets, tables, figures
 ```
 
 ## Layout
@@ -30,12 +34,14 @@ uv run --group bench python benchmarks/compare.py --help            # vs vtracer
 | `src/tracesmart/pipeline.py` | `vectorise()`: raw masks, "filter by impact", gap prompting, `--care` descriptions |
 | `src/tracesmart/trace.py` | mask to path: corner-preserving Beziers, mask smoothing |
 | `src/tracesmart/render.py` | stack masks to SVG, segment map, PNGs, HTML index; shape naming |
+| `src/tracesmart/layers.py` | `--layers objects/levels/depth`: containment tree, impact levels, depth layers; order-checked |
 | `src/tracesmart/tones.py` | optional colour splitting (`--tone-rms`) |
 | `src/tracesmart/cli.py` | typer CLI: `trace`, `rerender`, `index` |
 | `tests/` | synthetic-image tests only; no models, no network |
 | `benchmarks/` | comparison scripts, `RESULTS.md`, `SUPERSVG.md` (running SuperSVG on a Mac) |
 | `examples/` | curated, downscaled results, committed. Regenerate with `benchmarks/make_examples.py` |
-| `docs/` | `USAGE.md`, `COMPARISON.md`, `CREDITS.md` and `pipeline.jpg` (made by `benchmarks/pipeline_figure.py`); keep the README short and link here |
+| `references/` | paper index and notes (`fetch.sh` downloads the PDFs, gitignored) |
+| `docs/` | `DEVELOPMENT.md` (**handoff: status, next steps, environment, dead ends**), `USAGE.md`, `COMPARISON.md`, `CREDITS.md` and `pipeline.jpg` (made by `benchmarks/pipeline_figure.py`); keep the README short and link here |
 | `outputs/`, `tests/images/` | **gitignored**: local runs and the user's own photos |
 
 ## Conventions and decisions
@@ -51,6 +57,9 @@ uv run --group bench python benchmarks/compare.py --help            # vs vtracer
 - Neighbouring masks do not tile (SAM prompts differ, and smoothing shrinks masks), so `render.close_seams` grows each
   shape by up to ~2 px (less for small shapes) to stop a darker shape below showing as a thin strip. `--seam-px 0`
   turns it off. Do not remove it without another way of closing seams.
+- Layering must never change the painter's order of noticeably overlapping shapes (`layers.significant`); the tests
+  render flat and layered SVGs and compare pixels. Tolerance is deliberate: ignoring seam-strip overlaps gives a far
+  more useful structure (the exact version pulls most details into the structure layer).
 - Tracing keeps corners where the outline turns more than 35 degrees (windows stay rectangular); do not replace it
   with plain Catmull-Rom smoothing.
 - Don't add features the README doesn't need. Failed experiments were removed on purpose (tiled colour regions,

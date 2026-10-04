@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from . import layers as lay
 from .trace import hex_colour, mask_path, smooth_mask
 
 SVG_NS = 'xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
@@ -49,8 +50,58 @@ def close_seams(masks: list[np.ndarray], max_px: float) -> list[np.ndarray]:
     return out
 
 
+LEVEL_NAMES = ("1 Structure", "2 Objects", "3 Details")
+
+
+def compose(mode: str, rgb: np.ndarray, masks: list[np.ndarray], names: list[tuple[str, str]],
+            elements: dict[int, str]) -> str:
+    """Join the shape elements in stack order, optionally organised into groups or layers.
+
+    ``objects`` nests parts inside the shape that contains them; ``levels`` puts shapes on Inkscape layers from
+    coarse to fine, ``depth`` from back to front with no overlaps inside a layer. All keep every noticeably
+    overlapping pair in its original order, so the picture does not change.
+    """
+    if mode == "none":
+        return "".join(elements[i] for i in sorted(elements))
+    areas = [int(m.sum()) for m in masks]
+    inter = lay.intersections(masks)
+    pairs = lay.significant(inter, areas)
+    if mode == "levels":
+        level = lay.levels(rgb, masks, pairs)
+        out = []
+        for lv, name in enumerate(LEVEL_NAMES):
+            inner = "".join(elements[i] for i in sorted(elements) if level[i] == lv)
+            count = sum(1 for i in elements if level[i] == lv)
+            out.append(f'<g id="layer-{lv + 1}" inkscape:groupmode="layer" '
+                       f'inkscape:label="{name} ({count})">{inner}</g>')
+        return "".join(out)
+    if mode == "depth":
+        depth = lay.depths(len(masks), pairs)
+        out = []
+        for d in range(max(depth, default=-1) + 1):
+            members = [i for i in sorted(elements) if depth[i] == d]
+            where = " (back)" if d == 0 else " (front)" if d == max(depth) else ""
+            out.append(f'<g id="depth-{d + 1}" inkscape:groupmode="layer" '
+                       f'inkscape:label="Depth {d + 1}{where}, {len(members)} shapes">'
+                       f'{"".join(elements[i] for i in members)}</g>')
+        return "".join(out)
+    if mode != "objects":
+        raise ValueError(f"layers must be none, objects, levels or depth, not {mode!r}")
+
+    def emit(node: lay.Node) -> str:
+        own = elements.get(node.index, "")
+        if not node.children:
+            return own
+        sid, label = names[node.index]
+        return (f'<g id="{sid}-group" inkscape:label="{label} (group)">{own}'
+                f'{"".join(emit(c) for c in node.children)}</g>')
+
+    return "".join(emit(n) for n in lay.tree(lay.hierarchy(masks, inter, pairs)))
+
+
 def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None] | None = None,
-           round_px: float | None = None, tol: float | None = None, seam_px: float | None = None):
+           round_px: float | None = None, tol: float | None = None, seam_px: float | None = None,
+           layers: str = "none"):
     """Stack ``masks`` (bottom first) into an SVG.
 
     Returns ``(svg, preview image, segment-map svg)``. Each shape is filled with the mean colour of its
@@ -80,31 +131,35 @@ def render(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None
     preview = np.zeros_like(rgb)
     preview[:] = backdrop.astype(np.uint8)
 
-    paths, segments = [], []
+    paths, segments = {}, {}
+    names = [shape_name(i, p) for i, p in enumerate(phrases)]
     for i, (m, colour, phrase) in enumerate(zip(masks, colours, phrases, strict=True)):
         preview[m] = colour.astype(np.uint8)
         d = mask_path(m, tol)
         if not d:
             continue
-        sid, label = shape_name(i, phrase)
-        paths.append(f'<path id="{sid}" inkscape:label="{label}" fill="{hex_colour(colour)}" d="{d}"/>')
+        sid, label = names[i]
+        paths[i] = f'<path id="{sid}" inkscape:label="{label}" fill="{hex_colour(colour)}" d="{d}"/>'
         r, g, b = colorsys.hsv_to_rgb((i * 0.61803398875) % 1.0, 0.55 + 0.35 * ((i * 7) % 3) / 2,
                                       0.95 - 0.25 * ((i * 5) % 3) / 2)  # golden-angle hues: neighbours differ
         edge = 'stroke="#ff00ff" stroke-width="2.5"' if phrase else 'stroke="#ffffff" stroke-width="0.8"'
-        segments.append(f'<path id="{sid}" inkscape:label="{label}" fill="{hex_colour((r * 255, g * 255, b * 255))}" '
-                        f'{edge} stroke-linejoin="round" d="{d}"/>')
+        segments[i] = (f'<path id="{sid}" inkscape:label="{label}" fill="{hex_colour((r * 255, g * 255, b * 255))}" '
+                       f'{edge} stroke-linejoin="round" d="{d}"/>')
     head = f'<svg {SVG_NS} width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
-    svg = f'{head}<rect id="backdrop" width="{w}" height="{h}" fill="{hex_colour(backdrop)}"/>{"".join(paths)}</svg>\n'
-    seg_svg = f'{head}<rect width="{w}" height="{h}" fill="#222222"/>{"".join(segments)}</svg>\n'
+    body = compose(layers, rgb, masks, names, paths)
+    seg_body = compose(layers, rgb, masks, names, segments)
+    svg = f'{head}<rect id="backdrop" width="{w}" height="{h}" fill="{hex_colour(backdrop)}"/>{body}</svg>\n'
+    seg_svg = f'{head}<rect width="{w}" height="{h}" fill="#222222"/>{seg_body}</svg>\n'
     return svg, Image.fromarray(preview), seg_svg
 
 
 def write_outputs(image: Image.Image, masks: list[np.ndarray], phrases: list[str | None], out: Path,
-                  round_px: float | None = None, zoom: float = 3.0, seam_px: float | None = None) -> None:
+                  round_px: float | None = None, zoom: float = 3.0, seam_px: float | None = None,
+                  layers: str = "none") -> None:
     """Write the SVG, a hi-res PNG, the segment map (SVG + PNG) and a source | segments | vector comparison."""
     import resvg_py
 
-    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px, seam_px=seam_px)
+    svg, preview, seg_svg = render(image, masks, phrases, round_px=round_px, seam_px=seam_px, layers=layers)
     (out / "vector.svg").write_text(svg)
     (out / "segments.svg").write_text(seg_svg)
     preview.save(out / "preview.png")

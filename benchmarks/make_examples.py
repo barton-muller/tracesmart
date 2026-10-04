@@ -7,7 +7,10 @@ Expects outputs/<name>/{care,auto,methods}/ from `tracesmart trace` and benchmar
 import shutil
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
+
+from tracesmart.render import render
 
 PHOTOS = {  # example -> (photographer, Unsplash photo id)
     "oostpoort": ("Alex vd Slikke", "GYIGt-MQwZ8"), "canal": ("Casper van Battum", "25i3kDguOAE"),
@@ -37,6 +40,11 @@ for name in PHOTOS:
     shutil.copy(auto / "vector.svg", d / "vector-auto.svg")
     shutil.copy(meth / "supersvg.svg", d / "supersvg.svg")
     shutil.copy(meth / "methods.json", d / "metrics.json")
+    data = np.load(care / "masks.npz")  # layered variants of the --care result, for editing
+    masks, phrases = list(data["masks"]), [p or None for p in data["phrases"].tolist()]
+    source = Image.open(care / "source.png").convert("RGB")
+    for mode in ("objects", "levels", "depth"):
+        (d / f"vector-{mode}.svg").write_text(render(source, masks, phrases, layers=mode)[0])
     jpg(care / "compare.png", d / "compare.jpg", 2400, 85)
     jpg(meth / "methods.png", d / "methods.jpg", 2400, 85)
     for panel, f in PANELS.items():

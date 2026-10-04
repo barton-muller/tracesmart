@@ -49,3 +49,29 @@ Lay runs out as `outputs/<image>/<variant>/` and build a page that shows them al
 ```bash
 uv run tracesmart index --folder outputs
 ```
+
+## Layers for editing
+
+By default the SVG is a flat stack of shapes (bottom first). `--layers` organises it so it is easier to edit, on both
+`trace` and `rerender`:
+
+```bash
+uv run tracesmart rerender photo.jpg out/masks.npz --layers objects
+uv run tracesmart rerender photo.jpg out/masks.npz --layers levels
+uv run tracesmart rerender photo.jpg out/masks.npz --layers depth
+```
+
+| `--layers` | Result |
+|---|---|
+| `none` (default) | A flat stack of shapes |
+| `objects` | Parts nested in the shape that contains them: a hat inside its person becomes a child of that person's group (`person-18-group`), so selecting the group moves or recolours the whole person |
+| `levels` | Three Inkscape layers from coarse to fine: `1 Structure`, `2 Objects`, `3 Details`. Hide the last to simplify the picture |
+| `depth` | Inkscape layers from back to front (8 on the hikers). Shapes in one layer never overlap each other, so every layer is a clean cut-out. This is the layering of *Layered Image Vectorization via Semantic Simplification* (Wang et al., CVPR 2025), derived here from the painter's stack |
+
+A shape's level comes from its *impact*: how much it reduces the error against the photo when it is painted, the same
+measure SAMVG uses to decide which masks matter.
+
+Both modes keep every pair of noticeably overlapping shapes in its original order, so the picture is the same, with
+one tolerance: overlaps smaller than about 12% of the smaller shape (such as the 2 px strips where neighbours meet)
+are ignored, so along shared edges the two can differ by a pixel or two (about 0.1 to 0.5% of the pixels on the
+hikers). `benchmarks/layers_figure.py` makes the figure in the README.

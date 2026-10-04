@@ -20,6 +20,7 @@ All six were run with `--grid 48 --impact 3e-5 --max-side 1280 --rounds 3 --care
 | `source.jpg` | The downscaled photo (1280 px on the long side) |
 | `vector.svg` | tracesmart with `--care`; described shapes are named after their phrase (`window-12`) |
 | `vector-auto.svg` | tracesmart, automatic only |
+| `vector-objects.svg`, `vector-levels.svg`, `vector-depth.svg` | The `--care` result organised for editing: parts nested in their object, Inkscape layers coarse to fine, Inkscape layers back to front (see [../docs/USAGE.md](../docs/USAGE.md#layers-for-editing)) |
 | `supersvg.svg` | The SuperSVG (CVPR 2024) result with the same path budget |
 | `methods.jpg` | All panels in one row |
 | `compare.jpg` | source, segment map and vector |
