@@ -31,6 +31,21 @@ All six were run with `--grid 48 --impact 3e-5 --max-side 1280 --rounds 3 --care
 The vtracer SVGs are not included: the default one is about 15 to 20 MB per photo and the tuned one 1 to 2 MB.
 Regenerate them with `benchmarks/compare.py`.
 
+## Faces
+
+[`faces/`](faces/) has two group photos run through the faces stage ([docs/FACES.md](../docs/FACES.md)):
+
+| Example | Photo | Faces |
+|---|---|---|
+| [lake-friends](faces/lake-friends/) | [Tim Mossholder](https://unsplash.com/photos/hOF1bWoet_Q) | 5, one in sunglasses |
+| [stairs](faces/stairs/) | [Joel Muniz](https://unsplash.com/photos/HvZDCuRnSaY) | 5, one in clear glasses, one turned |
+
+Traced with `--max-side 1280 --grid 48 --impact 3e-5 --rounds 3` (no `--care`), then `tracesmart faces` in both styles.
+Each folder holds `source.jpg`, `vector-trace.svg` (the plain trace), `vector-cartoon.svg`, `vector-detailed.svg`,
+`compare.jpg` (photo, trace only, cartoon, detailed), `panels/` (each on its own), `detect.jpg` (the detected faces),
+`parse.jpg` (face parsing from per-face crops against the whole image), `steps/face-N.jpg` (photo crop, parsing,
+landmarks, cartoon, detailed for each face) and `run.json`. Regenerate with `benchmarks/make_face_examples.py`.
+
 ## Gallery
 
 ### Hikers
@@ -67,3 +82,5 @@ The photographs are from [Unsplash](https://unsplash.com) and are used under the
 - Kalen Emsley, [photo mgJSkgIo_JI](https://unsplash.com/photos/mgJSkgIo_JI)
 - Robert Bye, [photo JvUVo08dndQ](https://unsplash.com/photos/JvUVo08dndQ)
 - Casper van Battum, [photo 25i3kDguOAE](https://unsplash.com/photos/25i3kDguOAE)
+- Tim Mossholder, [photo hOF1bWoet_Q](https://unsplash.com/photos/hOF1bWoet_Q) (faces)
+- Joel Muniz, [photo HvZDCuRnSaY](https://unsplash.com/photos/HvZDCuRnSaY) (faces)

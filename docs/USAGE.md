@@ -22,6 +22,8 @@ uv run tracesmart trace photo.jpg -o out/ --care "person, face, hair, jumper, je
 
 ## Faces
 
+Full description, examples and limits: [FACES.md](FACES.md).
+
 SAM cannot resolve an eye a few pixels wide, so facial detail is a **second stage** that runs on a finished trace
 and draws the parts from where they are. It finds each face with RetinaFace, crops and upscales it, and reads it with
 a face-parsing SegFormer (hair, neck, skin, glasses) and `face-alignment` (68 landmarks: eyes, brows, mouth).

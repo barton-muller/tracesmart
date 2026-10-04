@@ -19,6 +19,7 @@ Python 3.13, managed with **uv**. Always `uv run ...` / `uv add ...`; never pip.
 ```bash
 uv run tracesmart trace photo.jpg -o out/ [--care "window, roof"]   # the main command
 uv run tracesmart rerender photo.jpg out/masks.npz --layers depth   # redraw from saved masks, no model (layers: none|objects|levels|depth)
+uv run --extra faces tracesmart faces photo.jpg out/masks.npz        # second stage: cartoon faces (--style detailed), docs/FACES.md
 uv run tracesmart index --folder outputs                            # HTML page over outputs/<image>/<variant>/
 uv run pytest -q                                                    # fast, no models needed
 uv run ruff check .                                                 # line length 120
@@ -35,13 +36,14 @@ benchmarks/run_all.sh rerender|bench|assets                         # rebuild de
 | `src/tracesmart/trace.py` | mask to path: corner-preserving Beziers, mask smoothing |
 | `src/tracesmart/render.py` | stack masks to SVG, segment map, PNGs, HTML index; shape naming |
 | `src/tracesmart/layers.py` | `--layers objects/levels/depth`: containment tree, impact levels, depth layers; order-checked |
+| `src/tracesmart/faces.py` | second stage: RetinaFace + face parsing + FAN landmarks, parts drawn by rule; optional extra `faces` |
 | `src/tracesmart/tones.py` | optional colour splitting (`--tone-rms`) |
 | `src/tracesmart/cli.py` | typer CLI: `trace`, `rerender`, `index` |
 | `tests/` | synthetic-image tests only; no models, no network |
 | `benchmarks/` | comparison scripts, `RESULTS.md`, `SUPERSVG.md` (running SuperSVG on a Mac) |
-| `examples/` | curated, downscaled results, committed. Regenerate with `benchmarks/make_examples.py` |
+| `examples/` | curated, downscaled results, committed. Regenerate with `benchmarks/make_examples.py`; `examples/faces/` with `benchmarks/make_face_examples.py` |
 | `references/` | paper index and notes (`fetch.sh` downloads the PDFs, gitignored) |
-| `docs/` | `DEVELOPMENT.md` (**handoff: status, next steps, environment, dead ends**), `USAGE.md`, `COMPARISON.md`, `CREDITS.md` and `pipeline.jpg` (made by `benchmarks/pipeline_figure.py`); keep the README short and link here |
+| `docs/` | `DEVELOPMENT.md` (**handoff: status, next steps, environment, dead ends**), `USAGE.md`, `FACES.md`, `COMPARISON.md`, `CREDITS.md` and `pipeline.jpg` (made by `benchmarks/pipeline_figure.py`); keep the README short and link here |
 | `outputs/`, `tests/images/` | **gitignored**: local runs and the user's own photos |
 
 ## Conventions and decisions

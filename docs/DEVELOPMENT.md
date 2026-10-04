@@ -81,6 +81,7 @@ Added 2026-10-04, uncommitted at the time of writing. A second stage over a fini
 | VTracer 1.0 CLI | `~/.cargo/bin/vtracer` (`cargo install vtracer-cli --version 1.0.0-alpha.4`) |
 | Model weights | Hugging Face cache (`facebook/sam2.1-hiera-large` about 0.9 GB, `facebook/sam3` about 3.3 GB). SAM 3 is gated: `hf auth login` was done on the dev machine |
 | GitHub | `gh` is logged in as the repo owner |
+| Face examples | `examples/faces/` made by `benchmarks/make_face_examples.py` from `outputs/tim` and `outputs/joel` (Unsplash photos by Tim Mossholder and Joel Muniz; downscaled copies in `tests/images/` are gitignored) |
 | Example photos | Unsplash, originals in `~/Downloads/*-unsplash.jpg`; downscaled copies and credits in `examples/` |
 | Local-only, gitignored | `outputs/` (all runs, about 1 GB with caches), `tests/images/` (**includes a private family photo, never publish**), `references/papers/*.pdf` |
 

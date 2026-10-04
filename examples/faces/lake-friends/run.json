@@ -1,0 +1,17 @@
+{
+ "title": "Five friends by the lake",
+ "photographer": "Tim Mossholder",
+ "unsplash": "hOF1bWoet_Q",
+ "faces": 5,
+ "trace": {
+  "grid": 48,
+  "impact": 3e-05,
+  "rounds": 3,
+  "max_side": 1280
+ },
+ "commands": [
+  "tracesmart trace photo.jpg -o out --max-side 1280 --grid 48 --impact 3e-5 --rounds 3",
+  "tracesmart faces photo.jpg out/masks.npz --max-side 1280",
+  "tracesmart faces photo.jpg out/masks.npz --max-side 1280 --style detailed -o out/faces-detailed"
+ ]
+}

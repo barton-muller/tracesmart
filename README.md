@@ -22,7 +22,7 @@ a 75 KB SVG. Photo by [Dan Ordze](https://unsplash.com/photos/4GoNeNKEB1M) on Un
 
 **The goal** is a simplified, editable illustration: low on detail, key features kept, flat colours you finish in
 Inkscape, Affinity or Illustrator. It is not a pixel-faithful trace. What is still too fine for any segmenter (fur,
-foreground grass, faces) you trace by hand on top, in the same file.
+foreground grass) you trace by hand on top, in the same file. Faces get their own second stage, below.
 
 ## Quick start
 
@@ -72,6 +72,25 @@ forest under it, so you can lift the hiker out and move them without leaving a h
 The layers do not change how the picture looks, apart from a pixel or two along shared edges. Details and limits in
 [docs/USAGE.md](docs/USAGE.md#layers-for-editing).
 
+## Faces
+
+SAM cannot resolve an eye a few pixels wide, so faces come out blank. `tracesmart faces` is a second stage that runs on
+a finished trace and draws eyes, brows, mouths, teeth, glasses and hair as their own named shapes, from face parsing
+and landmarks. The default style is a cartoon face: eyes as dots, a line or a dark open mouth with white teeth, thin
+brows, no nose.
+
+![Group on the stairs: the photo, the plain trace, cartoon faces, detailed faces](examples/faces/stairs/compare.jpg)
+
+*photo · trace only · cartoon faces · detailed faces. Photo by [Joel Muniz](https://unsplash.com/photos/HvZDCuRnSaY)
+on Unsplash.*
+
+```bash
+uv sync --extra faces
+uv run --extra faces tracesmart faces photo.jpg out/masks.npz
+```
+
+How it works, the examples, limits and timings: [docs/FACES.md](docs/FACES.md).
+
 ## Hardware and speed
 
 Developed and measured on **one machine: an Apple M2 with 16 GB of RAM**.
@@ -83,6 +102,7 @@ Developed and measured on **one machine: an Apple M2 with 16 GB of RAM**.
 | Detailed run (1280 px, `--grid 48`, 3 rounds; the examples' settings) | about **7 minutes**, about 1.5 GB |
 | Adding `--care`, masks already cached | about **1 minute** for 3 phrases, a few seconds per extra phrase |
 | `rerender`, `index` | seconds, no model |
+| `faces` (second stage, five faces) | about **8 seconds** warm, **16** cold, about 1.7 GB; downloads about 0.65 GB (face parser) and 0.1 GB (landmarks) |
 
 - The slow part is SAM 2.1 on the whole image. It is cached in `raw_masks.npz`, so changing `--care`, `--impact`
   or the rendering afterwards does not repeat it.
@@ -107,6 +127,8 @@ scores):
 <td align="center"><a href="examples/canal/"><img src="examples/canal/panels/tracesmart-care.jpg" width="260"><br>canal</a></td>
 </tr>
 </table>
+
+Faces, with the model steps shown for every face: [examples/faces/](examples/faces/) and [docs/FACES.md](docs/FACES.md).
 
 ## How it compares
 
