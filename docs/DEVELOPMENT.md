@@ -10,29 +10,20 @@ For anyone (human or agent) picking this project up. Written 2026-10-04. Agent-o
   sharp-corner tracing; seam closing; gap fill; 19 fast tests; ruff clean.
 - Measured on one machine only (Apple M2, 16 GB): default run about 4 min, detailed run about 7 min, `--care` about
   1 min for 3 phrases with cached masks.
-- Everything above, including layering, `references/` and these docs, is committed and pushed. Run `git status` anyway: the
-  benchmark below rewrites `benchmarks/RESULTS.md` and `examples/*` (panels, `methods.jpg`) when it finishes, and
-  those changes still need committing.
-- **A benchmark run may still be going or have died.** It re-tunes vtracer and re-runs SuperSVG for each of the six
-  examples at tracesmart's current path counts, then writes `benchmarks/RESULTS.md`. Check
-  `ls outputs/*/methods/vtracer1_*.svg` (six of each kind means done) and `ps aux | grep compare.py`. To finish or
-  redo it: `benchmarks/run_all.sh bench` then `benchmarks/run_all.sh assets` (about 10 minutes per photo).
+- Everything, including layering, `references/`, the VTracer 1.0 benchmark and these docs, is committed and pushed.
+  Run `git status` anyway.
 
 ## Next steps, in rough order
 
-1. **Finish the benchmark and update the docs.** Add the two VTracer 1.0 rows (watershed, colour) to the tables in
-   `README.md` and `docs/COMPARISON.md` (the numbers come from `benchmarks/RESULTS.md`), remove the "1.0 was not
-   tested" caveats there and in `README.md` (Related work), mention `vector-objects/levels/depth.svg` in
-   `examples/README.md`, then commit and push.
-2. **Try the layered SVGs in Inkscape.** They were only checked by rendering with resvg and by tests; nobody has
+1. **Try the layered SVGs in Inkscape.** They were only checked by rendering with resvg and by tests; nobody has
    opened them in an editor yet. Decide the default for `--layers` (currently `none`).
-3. **Multi-level SAM** (cheap idea from the Wang et al. paper, see `references/notes/semantic-simplification.md`): run SAM
+2. **Multi-level SAM** (cheap idea from the Wang et al. paper, see `references/notes/semantic-simplification.md`): run SAM
    on progressively simplified copies of the photo and pool the masks before "filter by impact".
-4. **Click-to-fix interface** (planned early on): SAM 2.1 point prompts to add, carve, merge and delete shapes,
+3. **Click-to-fix interface** (planned early on): SAM 2.1 point prompts to add, carve, merge and delete shapes,
    with live SVG preview. The image is encoded once (`backends.Prompter`), each click is cheap.
-5. Quality items: faces and fine texture, the dog (its SAM 3 mask is mostly hidden by smaller shapes), foreground
+4. Quality items: faces and fine texture, the dog (its SAM 3 mask is mostly hidden by smaller shapes), foreground
    grass. Mean colours wash out saturation; a better colour choice is possible (it is easy to fix in an editor).
-6. Optional: DiffVG refinement of shapes and colours (SAMVG stage 3), PyPI release (the name `tracesmart` was free
+5. Optional: DiffVG refinement of shapes and colours (SAMVG stage 3), PyPI release (the name `tracesmart` was free
    on 2026-10-02).
 
 ## Environment map
@@ -53,9 +44,10 @@ cached in `outputs/<name>/raw_cache.npz` so a rerun with other phrases costs onl
 
 ## Measured results (six Unsplash photos, averages)
 
-Per photo in `benchmarks/RESULTS.md`. By PSNR and SSIM tracesmart comes last at a similar path count, by design (flat
-colour per shape). Visually it is the only one where shapes are objects. vtracer's defaults give about 14,000 paths
-and 15 MB; tuned to about 115 paths it is speckled; SuperSVG is painterly and blurs objects together.
+Per photo in `benchmarks/RESULTS.md`; table in the README. At about 130 paths tracesmart (--care) scores PSNR 17.0 /
+SSIM 0.41; VTracer 1.0 watershed 18.1 / 0.44 (188 KB); VTracer 1.0 colour 18.5 / 0.51 (626 KB); SuperSVG 19.1 / 0.44
+(70 KB); VTracer 0.6 tuned 15.3 / 0.47 (1.5 MB). tracesmart's files are about 64 KB. Pixel scores favour the others
+by design (tracesmart uses one flat colour per shape); visually it is the only one whose shapes are objects.
 
 ## Decisions and dead ends (so they are not repeated)
 

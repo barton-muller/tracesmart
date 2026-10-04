@@ -104,27 +104,36 @@ scores):
 
 ## How it compares
 
-![The hikers traced by vtracer, SuperSVG and tracesmart](examples/hikers/methods.jpg)
+![The hikers traced by VTracer, SuperSVG and tracesmart](examples/hikers/methods.jpg)
 
-*Photo, vtracer (defaults), vtracer (tuned to about 110 paths), SuperSVG (CVPR 2024, about 110 paths), tracesmart
-(automatic), tracesmart (`--care`).*
+*Photo, VTracer 0.6 (defaults), VTracer 0.6 (tuned to about 130 paths), VTracer 1.0 (watershed, tuned), VTracer 1.0
+(colour, tuned), SuperSVG (CVPR 2024, about 130 paths), tracesmart (automatic), tracesmart (`--care`).*
 
 Averages over the six photos:
 
 | Method | Paths | File size | PSNR | SSIM |
 |---|---|---|---|---|
-| vtracer, defaults | 14,074 | 15.4 MB | 22.8 | 0.76 |
-| vtracer, tuned to about 115 paths | 116 | 1.6 MB | 17.2 | 0.50 |
-| SuperSVG (CVPR 2024) | 115 | 63 KB | 18.8 | 0.43 |
+| VTracer 0.6, defaults | 14,074 | 15.4 MB | 22.8 | 0.76 |
+| VTracer 0.6, tuned to about 130 paths | 129 | 1.5 MB | 15.3 | 0.47 |
+| VTracer 1.0, watershed, tuned | 128 | 188 KB | 18.1 | 0.44 |
+| VTracer 1.0, colour clustering, tuned | 129 | 626 KB | 18.5 | 0.51 |
+| SuperSVG (CVPR 2024) | 128 | 70 KB | 19.1 | 0.44 |
 | tracesmart, automatic | 107 | 62 KB | 16.2 | 0.41 |
 | tracesmart, `--care` | 128 | 64 KB | 17.0 | 0.41 |
 
-- **By pixel scores tracesmart comes last** at a similar path count. PSNR and SSIM reward copying the photo;
-  tracesmart flattens every shape to one colour on purpose.
-- vtracer's defaults look exactly like the photo because they *are* thousands of tiny colour fragments, not
-  objects. Tuned down, it turns speckled; SuperSVG gives a painterly blur in which objects run together.
-- What the scores miss is whether a shape is an *object*. That is the point of tracesmart and no score here
-  measures it, so judge it from the images.
+- **By pixel scores tracesmart is near the bottom** at a similar path count: its PSNR (17.0) beats only the tuned
+  VTracer 0.6 (15.3), and its SSIM (0.41) is the lowest. PSNR and SSIM reward copying the photo; tracesmart fills
+  every shape with one flat colour and drops texture on purpose.
+- **VTracer's defaults are not a simplification**: about 14,000 paths and 15 MB per photo, with 0.6 and 1.0 alike.
+- **VTracer 1.0 is a big step up from 0.6.** Tuned to about 130 paths its files are 188 KB (watershed) to 626 KB
+  (colour clustering) instead of 1.5 MB, and it scores above tracesmart (PSNR 18.1 to 18.5). The watershed mode keeps
+  edges such as cloud outlines and you can pick out the hikers, but its boundaries are ragged and parts of a person
+  merge; the colour mode is speckled. Its files are still 3 to 10 times the size of tracesmart's.
+- **SuperSVG** gives light files and the best PSNR of the tuned methods (19.1), but objects run together in a
+  painterly blur: the hikers and the buildings are not clearly separate things.
+- **What the scores miss** is whether a shape is an *object*. tracesmart's shapes are a hat, a backpack, a window,
+  and with `--care` they are named. That is the thing it is built for, and no score here measures it, so judge it
+  from the images.
 
 Close-ups with every shape outlined, the full gallery, caveats and how to reproduce:
 [docs/COMPARISON.md](docs/COMPARISON.md).
@@ -149,9 +158,9 @@ have built on it. Read from their READMEs and abstracts, **not run** by me excep
 - **SAMVG re-implementations** exist as small student repos (for example
   [kevin20010808/MultimediaProcessingTermProject](https://github.com/kevin20010808/MultimediaProcessingTermProject)).
   I did not find a packaged tool.
-- **[VTracer](https://github.com/visioncortex/vtracer)** is now at 1.0, with a desktop app and newer modes such as
-  seam-free cutout and watershed clustering. My comparison used the `vtracer` 0.6.15 Python package and did not
-  test those.
+- **[VTracer](https://github.com/visioncortex/vtracer)** is now at 1.0 (alpha), with a desktop app and newer modes.
+  The comparison includes the 0.6.15 Python package and the 1.0 command-line tool's watershed and colour-clustering
+  modes; its seam-free cutout mode and the desktop app were not tested.
 - **Research methods** such as [AmodalSVG](https://arxiv.org/abs/2604.10940),
   [*Controlling Your Image via Simplified Vector Graphics*](https://arxiv.org/abs/2602.14443),
   [*Layered Image Vectorization via Semantic Simplification*](https://arxiv.org/abs/2406.05404), LIVE and

@@ -8,17 +8,31 @@
  },
  {
   "method": "vtracer (matched paths)",
-  "paths": 81,
-  "kb": 1607,
-  "psnr": 16.1,
-  "ssim": 0.415
+  "paths": 96,
+  "kb": 2637,
+  "psnr": 18.4,
+  "ssim": 0.468
+ },
+ {
+  "method": "vtracer 1.0 (watershed, matched paths)",
+  "paths": 95,
+  "kb": 177,
+  "psnr": 16.8,
+  "ssim": 0.384
+ },
+ {
+  "method": "vtracer 1.0 (colour, matched paths)",
+  "paths": 95,
+  "kb": 736,
+  "psnr": 18.2,
+  "ssim": 0.46
  },
  {
   "method": "SuperSVG (CVPR 2024)",
-  "paths": 81,
-  "kb": 44,
-  "psnr": 17.6,
-  "ssim": 0.379
+  "paths": 95,
+  "kb": 52,
+  "psnr": 18.1,
+  "ssim": 0.386
  },
  {
   "method": "tracesmart (automatic)",

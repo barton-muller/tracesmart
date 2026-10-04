@@ -17,9 +17,16 @@ PHOTOS = {  # example -> (photographer, Unsplash photo id)
     "hikers": ("Dan Ordze", "4GoNeNKEB1M"), "delft-street": ("Folco Masi", "yvByaC2YqPs"),
     "mountain-lake": ("Kalen Emsley", "mgJSkgIo_JI"), "lone-hiker": ("Robert Bye", "JvUVo08dndQ"),
 }
-PANELS = {"photo": None, "vtracer-defaults": "vtracer-defaults.png", "vtracer-matched": "vtracer-matched-paths.png",
-          "supersvg": "supersvg-cvpr-2024.png", "tracesmart-automatic": "tracesmart-automatic.png",
-          "tracesmart-care": "tracesmart-care.png"}
+PANELS = {  # panel name -> file written by compare.py in outputs/<name>/methods (None: the photo itself)
+    "photo": None,
+    "vtracer-defaults": "vtracer-defaults.png",
+    "vtracer-matched": "vtracer-matched-paths.png",
+    "vtracer1-watershed": "vtracer-1-0-watershed-matched-paths.png",
+    "vtracer1-colour": "vtracer-1-0-colour-matched-paths.png",
+    "supersvg": "supersvg-cvpr-2024.png",
+    "tracesmart-automatic": "tracesmart-automatic.png",
+    "tracesmart-care": "tracesmart-care.png",
+}
 
 
 def jpg(src: Path, dst: Path, width: int | None = None, q: int = 84) -> None:

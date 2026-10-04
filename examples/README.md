@@ -24,7 +24,7 @@ All six were run with `--grid 48 --impact 3e-5 --max-side 1280 --rounds 3 --care
 | `supersvg.svg` | The SuperSVG (CVPR 2024) result with the same path budget |
 | `methods.jpg` | All panels in one row |
 | `compare.jpg` | source, segment map and vector |
-| `panels/` | Each panel on its own: `photo`, `vtracer-defaults`, `vtracer-matched`, `supersvg`, `tracesmart-automatic`, `tracesmart-care`, `segments` |
+| `panels/` | Each panel on its own: `photo`, `vtracer-defaults`, `vtracer-matched`, `vtracer1-watershed`, `vtracer1-colour`, `supersvg`, `tracesmart-automatic`, `tracesmart-care`, `segments` |
 | `metrics.json` | Paths, file size, PSNR and SSIM per method |
 | `closeup.jpg` | (hikers, delft-street) the same region with every shape outlined, vtracer against tracesmart |
 
